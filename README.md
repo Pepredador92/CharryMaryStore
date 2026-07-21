@@ -44,3 +44,11 @@ All commands are run from the root of the project, from a terminal:
 ## 👀 Want to learn more?
 
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+
+## Configuración de Supabase
+
+- Copia `.env.example` como `.env.local`.
+- Sustituye los valores de ejemplo por la Project URL y la Publishable Key de Supabase.
+- No compartas ni subas `.env.local` a GitHub.
+- Ejecuta `npm install` antes de iniciar el proyecto.
+- Ejecuta `npm run dev` para desarrollo local.
