@@ -987,7 +987,9 @@ No debe crearse otra carpeta de migraciones.
 
 #### Estado actual de migraciones locales
 
-Las siguientes migraciones están **implementadas, validadas estáticamente, versionadas y publicadas**:
+`M01` a `M12` constituyen la colección de migraciones iniciales aprobadas e implementadas de `CM-M03.2`.
+
+Las siguientes migraciones están **implementadas, validadas estáticamente, versionadas y publicadas** en el repositorio remoto de código:
 
 | Módulo | Archivo | Commit |
 |---|---|---|
@@ -1000,12 +1002,15 @@ Las siguientes migraciones están **implementadas, validadas estáticamente, ver
 | `M07 — orders_and_historical_snapshots` | `supabase/migrations/20260805140658_orders_and_historical_snapshots.sql` | `6e5bd15` |
 | `M08 — inventory_movements` | `supabase/migrations/20260805144727_inventory_movements.sql` | `4db5b89` |
 | `M09 — order_preparation` | `supabase/migrations/20260805150024_order_preparation.sql` | `96904e8` |
+| `M10 — order_delivery` | `supabase/migrations/20260805154111_order_delivery.sql` | `c7e3ab4` |
+| `M11 — asynchronous_support` | `supabase/migrations/20260810160112_asynchronous_support.sql` | `496f9c0` |
+| `M12 — sensitive_evidence_and_catalog_resources` | `supabase/migrations/20260810164914_sensitive_evidence_and_catalog_resources.sql` | `0460448` |
 
-“Publicadas” significa que las migraciones fueron versionadas y publicadas en el repositorio remoto de código. **Ninguna migración ha sido aplicada localmente ni remotamente a Supabase.**
+“Publicadas” significa que las migraciones fueron versionadas y publicadas en `origin/main`. **Ninguna migración había sido aplicada localmente ni remotamente a Supabase en el momento de esta sincronización documental.**
 
-Las validaciones realizadas sobre `M01` a `M09` fueron estáticas y de repositorio. No debe afirmarse que las migraciones fueron ejecutadas o validadas contra PostgreSQL o contra el proyecto remoto de Supabase.
+Las validaciones realizadas sobre `M01` a `M12` fueron estáticas y de repositorio. No debe afirmarse que las migraciones fueron ejecutadas o validadas contra PostgreSQL o contra el proyecto remoto de Supabase.
 
-#### Alcance físico implementado hasta M09
+#### Alcance físico implementado hasta M12
 
 Sin alterar las fuentes autoritativas del dominio, las migraciones implementadas cubren:
 
@@ -1018,6 +1023,9 @@ Sin alterar las fuentes autoritativas del dominio, las migraciones implementadas
 - Pedido, Partidas y fotografías históricas, componentes históricos de Paquetes, destino autorizado y habilitación comercial para Preparación.
 - Movimientos de inventario append-only, sin reservas y sin automatización transaccional.
 - Preparación, acciones históricas y verificaciones vigentes por Partida.
+- Entrega, custodia, asignaciones, intentos y acciones logísticas históricas.
+- Solicitudes de atención asincrónica y mensajes asociados.
+- Recursos editoriales del catálogo y metadatos mínimos de evidencia logística sensible adicional.
 
 Las cuentas personales y operativas permanecen separadas. Supabase Auth se utiliza como proveedor técnico de autenticación sin duplicar contraseñas, sesiones, tokens, JWT, claims, MFA ni credenciales en tablas propias.
 
@@ -1050,60 +1058,77 @@ Además de las decisiones conceptuales de `CM-M03.1`, durante `CM-M03.2` quedaro
 - La unidad de trabajo de la Preparación es el Pedido completo y no existe finalización parcial.
 - Los Paquetes deben verificarse completos conforme a sus componentes históricos.
 - Reabrir conserva la finalización anterior en `preparation_actions`.
+- Los hechos logísticos mínimos permanecen en el historial de Entrega.
+- La evidencia logística sensible adicional se conserva separada de los hechos mínimos de Entrega.
+- La evidencia sensible adicional puede eliminarse anticipadamente y no sustituye el historial logístico.
+- Los recursos editoriales del catálogo pueden pertenecer a Producto, Presentación vendible o Paquete, sin almacenar SKU, precio, inventario, bucket, URL, proveedor ni credenciales.
+- La Solicitud de atención asincrónica conserva conversación, mensajes, resolución de atención y causa de cierre sin modificar por sí sola Pedido, Preparación o Entrega.
+- `M13 — transversal_audit` permanece diferida a `CM-M03.3`; `public.audit_events` todavía no existe.
 
 #### Línea base remota de Supabase
 
-Proyecto mostrado en Supabase:
+Proyecto verificado por la guía:
 
-`charry-mary`
+```text
+Nombre:
+charry-mary
+
+Project ref:
+dfikkwujpnxljcxvkozq
+```
 
 La conclusión verificada de la inspección fue:
 
-> La línea base remota de negocio está vacía respecto de tablas propias, políticas asociadas a tablas, migraciones registradas y buckets. No se encontraron triggers asociados a tablas. Existe `public.rls_auto_enable`, y la existencia de un event trigger global asociado permanece no verificada.
+> La línea base remota de negocio estaba vacía respecto de tablas propias de Cherry Mary, políticas asociadas a tablas, migraciones registradas y buckets antes de la aplicación de `M01` a `M12`.
 
 Estado verificado:
 
-- Esquema `public`: sin tablas propias de Cherry Mary.
+- Esquema `public`: sin tablas propias de Cherry Mary antes de la aplicación de `M01` a `M12`.
 - Políticas asociadas a tablas: ninguna.
 - Triggers asociados a tablas del esquema `public`: ninguno visible.
-- Migraciones registradas: ninguna.
+- Historial remoto de migraciones: vacío antes de la aplicación de `M01` a `M12`.
 - Buckets de Storage: ninguno.
 - Políticas bajo `storage.objects`: ninguna.
 - Políticas bajo `storage.buckets`: ninguna.
-- Event trigger global asociado con `public.rls_auto_enable`: no verificado.
-- Activación efectiva de `public.rls_auto_enable`: no verificada.
+- Event trigger `ensure_rls`: existe, está habilitado, se ejecuta en `ddl_command_end` e invoca `public.rls_auto_enable`.
+- Función `public.rls_auto_enable`: owner `postgres`, return type `event_trigger`.
 
-La pantalla `Database → Triggers` inspeccionada estaba orientada a triggers de tabla y no permite demostrar la ausencia de event triggers globales.
+Como ninguna migración había sido aplicada localmente ni remotamente al momento de esta sincronización documental, la publicación de `M01` a `M12` en Git no modifica por sí sola esta línea base remota.
 
-Como ninguna migración ha sido aplicada localmente ni remotamente, la publicación de `M01` a `M09` en Git no modifica por sí sola esta línea base remota.
+#### Objetos remotos preexistentes `ensure_rls` y `public.rls_auto_enable`
 
-#### Objeto remoto preexistente `public.rls_auto_enable`
+`ensure_rls` y `public.rls_auto_enable` se clasifican como:
 
-`public.rls_auto_enable` se clasifica exactamente como:
+> Objetos remotos preexistentes aceptados como condición técnica para la aplicación controlada de `M01` a `M12`.
 
-> Objeto remoto preexistente de procedencia y activación no verificadas.
+Estado verificado:
+
+```text
+Función:
+public.rls_auto_enable
+
+Owner:
+postgres
+
+Return type:
+event_trigger
+
+Event trigger asociado:
+ensure_rls
+
+Evento:
+ddl_command_end
+
+Estado:
+habilitado
+
+Función invocada por el event trigger:
+public.rls_auto_enable
+```
 
 La definición inspeccionada recorre comandos DDL proporcionados por `pg_event_trigger_ddl_commands()` para `CREATE TABLE`, `CREATE TABLE AS` y `SELECT INTO`. Cuando el objeto creado corresponde a una tabla o tabla particionada del esquema `public`, intenta ejecutar `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`. La función registra el éxito o fallo mediante mensajes de log. No crea políticas RLS.
 
 Habilitar RLS no crea políticas de acceso. Sin políticas aplicables, habilitar RLS por sí solo no concede acceso a las tablas ni sustituye el diseño de `CM-M03.3`.
-
-Permanece no verificado:
-
-- Su procedencia.
-- Su propietario.
-- Su fecha de creación.
-- La existencia de un event trigger asociado.
-- El evento que podría invocarla.
-- Su activación efectiva.
-- Su ejecución real al crear una tabla.
-
-La interfaz de Supabase presentó una discrepancia de metadatos: la lista de funciones mostró `event_trigger`, mientras la pantalla de detalle mostró `void`. La inspección de solo lectura no resolvió esta diferencia.
-
-La discrepancia:
-
-- No bloqueó el diseño físico ni la creación local de migraciones.
-- Debe revisarse antes de aplicar migraciones o durante `CM-M03.3`.
-- No debe resolverse mediante modificación o SQL dentro de `CM-M03.2`.
 
 `public.rls_auto_enable` no debe:
 
@@ -1115,7 +1140,15 @@ La discrepancia:
 - Utilizarse como sustituto de las políticas de `CM-M03.3`.
 - Considerarse suficiente para permitir acceso a las tablas.
 
-Su procedencia, activación y ejecución real continúan sin verificarse.
+`ensure_rls` no debe:
+
+- Eliminarse.
+- Modificarse.
+- Deshabilitarse.
+- Recrearse.
+- Incluirse en migraciones de Cherry Mary.
+- Adoptarse como decisión de Cherry Mary.
+- Utilizarse como sustituto de las políticas de `CM-M03.3`.
 
 #### Vercel
 
@@ -1128,13 +1161,16 @@ Esta situación:
 - No bloqueó la creación local y estática de las migraciones.
 - Debe revisarse en un paso posterior expresamente autorizado.
 
-#### Módulos todavía no iniciados
+#### Módulos todavía no iniciados o diferidos
 
 - `CM-M03.3 — RLS`: no iniciado.
 - `CM-M03.4 — Seed inicial`: no iniciado.
-- `CM-M03.2-M10 — order_delivery`: no iniciado y no autorizado hasta que la guía revise esta sincronización.
+- `M13 — transversal_audit`: diferida a `CM-M03.3`.
+- `public.audit_events`: todavía no existe.
 
-La existencia de `M01` a `M09` no autoriza automáticamente `M10`, la aplicación de migraciones, RLS, seed, Storage, funciones, triggers, código de aplicación ni cambios de infraestructura.
+`M13` no forma parte de las migraciones aplicables de `CM-M03.2`. La materialización de auditoría transversal se retomará conjuntamente con `CM-M03.3`; en ese módulo deberán decidirse acceso, integridad, minimización y conservación antes de cerrar su diseño físico.
+
+La existencia de `M01` a `M12` no autoriza automáticamente la aplicación remota, RLS policies, seed, Storage, funciones, triggers, código de aplicación ni cambios de infraestructura.
 
 ---
 
@@ -1177,14 +1213,13 @@ Decisiones y hallazgos vigentes:
 1. `helpless-halo` es el repositorio oficial de Cherry Mary.
 2. El repositorio exterior es un contenedor Git accidental o incompleto y no debe intervenirse.
 3. La ubicación oficial de migraciones es `helpless-halo/supabase/migrations/`.
-4. La línea base remota de negocio inspeccionada no contenía tablas propias, políticas asociadas a tablas, migraciones registradas ni buckets.
+4. La línea base remota de negocio inspeccionada no contenía tablas propias, políticas asociadas a tablas, migraciones registradas ni buckets antes de aplicar `M01` a `M12`.
 5. Triggers asociados a tablas del esquema `public`: ninguno visible durante la inspección.
-6. Event trigger global asociado con `public.rls_auto_enable`: no verificado.
-7. Activación efectiva de `public.rls_auto_enable`: no verificada.
+6. `ensure_rls` existe, está habilitado, se ejecuta en `ddl_command_end` e invoca `public.rls_auto_enable`.
+7. `public.rls_auto_enable` pertenece al esquema `public`, tiene owner `postgres` y return type `event_trigger`.
 8. La definición inspeccionada intenta habilitar RLS para determinadas tablas nuevas del esquema `public`, registra éxito o fallo y no crea políticas.
-9. La interfaz presentó una discrepancia no resuelta entre `event_trigger` y `void`.
-10. `public.rls_auto_enable` no forma parte de las decisiones aprobadas de Cherry Mary y no debe modificarse ni adoptarse.
-11. La raíz de despliegue de Vercel permanece no verificable y diferida.
+9. `ensure_rls` y `public.rls_auto_enable` no forman parte de las decisiones aprobadas de Cherry Mary y no deben modificarse ni adoptarse.
+10. La raíz de despliegue de Vercel permanece no verificable y diferida.
 
 ### Decisiones aprobadas durante CM-M03.2
 
@@ -1255,10 +1290,11 @@ Decisiones y hallazgos vigentes:
 
 ### Estado de implementación de CM-M03.2
 
-- `M01` a `M09`: **implementadas, validadas estáticamente, versionadas y publicadas**.
+- `M01` a `M12`: **implementadas, validadas estáticamente, versionadas y publicadas**.
 - Aplicación local de migraciones: **no realizada**.
 - Aplicación remota a Supabase: **no realizada**.
-- `M10 — order_delivery`: **no iniciado y no autorizado** hasta que la guía revise esta sincronización.
+- `M13 — transversal_audit`: **diferida a `CM-M03.3`**.
+- `public.audit_events`: **todavía no existe**.
 - `CM-M03.3 — RLS`: **no iniciado**.
 - `CM-M03.4 — Seed inicial`: **no iniciado**.
 
@@ -1266,14 +1302,11 @@ Decisiones y hallazgos vigentes:
 
 Permanecen diferidos o requieren autorización posterior:
 
-- Aplicación local o remota de las migraciones.
-- Diseño e implementación de `M10 — order_delivery`.
-- `M11 — asynchronous_support`.
-- `M12 — sensitive_evidence_and_catalog_resources`.
-- `M13 — transversal_audit`.
+- Aplicación local o remota controlada de `M01` a `M12`.
+- `M13 — transversal_audit`, diferida a `CM-M03.3`.
 - Políticas RLS y matriz técnica de acceso de `CM-M03.3`.
 - Seed de `CM-M03.4`.
-- Revisión técnica de procedencia, propietario, event trigger asociado, activación, ejecución real y discrepancia de metadatos de `public.rls_auto_enable`.
+- Diseño físico de `public.audit_events`, incluyendo acceso, integridad, minimización y conservación.
 - Configuración y raíz de despliegue de Vercel.
 - Normalización del repositorio exterior.
 - Buckets, Storage, APIs, webhooks, funciones Edge e integraciones.
@@ -1291,20 +1324,27 @@ Ninguna decisión diferida puede resolverse implícitamente durante la programac
 
 El único próximo paso autorizado es:
 
-> Entregar el `CHERRY_MARY_PROJECT_CONTEXT.md` sincronizado a la guía de arquitectura para revisión.
+> `CM-M03.2-REMOTE-APPLY — Aplicación remota controlada de M01 a M12`.
 
-Esta sincronización no autoriza `M10 — order_delivery`.
+Esta autorización podrá ejecutarse solo después de:
 
-Hasta que la guía revise el documento y emita una autorización posterior y explícita:
+1. Revisar y aprobar esta sincronización documental.
+2. Realizar manualmente commit de `CHERRY_MARY_PROJECT_CONTEXT.md`.
+3. Publicar ese commit en `origin/main`.
+4. Volver a obtener `git status --short` limpio.
 
-- No debe iniciarse `M10`.
-- No debe prepararse un prompt para Codex de `M10`.
-- No debe ejecutarse Codex.
-- No deben crearse o modificarse migraciones.
-- No debe aplicarse SQL local ni remotamente.
+Hasta que esas condiciones se cumplan:
+
+- No debe ejecutarse `CM-M03.2-REMOTE-APPLY`.
+- No debe crearse M13.
+- No debe crearse `public.audit_events`.
 - No debe iniciarse `CM-M03.3 — RLS`.
 - No debe iniciarse `CM-M03.4 — Seed inicial`.
+- No deben crearse RLS policies.
+- No debe crearse seed.
+- No debe modificarse código de aplicación.
 - No debe modificarse `public.rls_auto_enable`.
+- No debe modificarse `ensure_rls`.
 - No debe modificarse `.env.local`.
 - No debe modificarse Vercel ni `astro.config.mjs`.
 - No debe intervenirse el repositorio exterior.
