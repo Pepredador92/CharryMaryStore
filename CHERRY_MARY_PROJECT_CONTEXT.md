@@ -471,7 +471,7 @@ Si el usuario indica que otra conversación está trabajando, debe esperarse el 
 
 Módulo actual:
 
-`CM-M03.2 — Migraciones iniciales`
+`CM-M03.3 — Diseño de seguridad, RLS y auditoría transversal`
 
 Estado general:
 
@@ -480,9 +480,11 @@ Estado general:
 - `PR-01` a `PR-03`: **aprobadas y cerradas**.
 - `CM-ADR-001` a `CM-ADR-007`: **aprobadas**.
 - `CM-ADR-007 — Adenda 01 — Conservación de evidencia logística`: **aprobada**.
-- `CM-M03.2 — Migraciones iniciales`: **iniciado y en curso**.
+- `CM-M03.2 — Migraciones iniciales`: **implementado, aplicado y validado remotamente**.
 - Fase de inspección técnica de `CM-M03.2`: **completada, validada y cerrada documentalmente**.
-- `CM-M03.3 — RLS`: **no iniciado**.
+- `CM-M03.3 — RLS y auditoría transversal`: **iniciado y en implementación**.
+- `CM-M03.3-S01 — Fundación de autorización y auditoría transversal`: **implementada, aplicada remotamente y validada**.
+- `CM-M03.3-S02 — Policies RLS`: **pendiente / no implementada**.
 - `CM-M03.4 — Seed inicial`: **no iniciado**.
 
 El cierre conceptual de `CM-M03.1` permanece vigente. Las decisiones físicas y migraciones aprobadas posteriormente dentro de `CM-M03.2` no reabren ni modifican las decisiones de dominio ya cerradas.
@@ -827,7 +829,7 @@ Implicaciones:
 
 - **Fecha de aprobación formal:** 28 de julio de 2026.
 - **Alcance del cierre:** modelo conceptual del dominio y diseño de datos.
-- **Implementación técnica de CM-M03.1:** no formó parte de su alcance. La implementación física posterior se desarrolla dentro de `CM-M03.2`, que está iniciado y en curso.
+- **Implementación técnica de CM-M03.1:** no formó parte de su alcance. La implementación física posterior se desarrolló dentro de `CM-M03.2`, que está implementado, aplicado y validado remotamente.
 
 La aprobación confirma que, dentro del alcance conceptual de `CM-M03.1`, no permanecen bloqueos arquitectónicos, fuentes autoritativas duplicadas ni decisiones críticas ocultas.
 
@@ -917,7 +919,7 @@ Durante `CM-M03.1` no se crearon ni diseñaron tablas, columnas, SQL, migracione
 
 ### Estado de CM-M03.2 — Migraciones iniciales
 
-`CM-M03.2 — Migraciones iniciales` está **iniciado y en curso**.
+`CM-M03.2 — Migraciones iniciales` está **implementado, aplicado y validado remotamente**.
 
 La fase de inspección técnica local y remota fue **completada, validada y cerrada documentalmente**. Incluyó:
 
@@ -989,7 +991,7 @@ No debe crearse otra carpeta de migraciones.
 
 `M01` a `M12` constituyen la colección de migraciones iniciales aprobadas e implementadas de `CM-M03.2`.
 
-Las siguientes migraciones están **implementadas, validadas estáticamente, versionadas y publicadas** en el repositorio remoto de código:
+Las siguientes migraciones están **implementadas, validadas estáticamente, versionadas y publicadas** en el repositorio remoto de código, y fueron **aplicadas y validadas remotamente** en el proyecto Supabase `charry-mary`:
 
 | Módulo | Archivo | Commit |
 |---|---|---|
@@ -1006,9 +1008,32 @@ Las siguientes migraciones están **implementadas, validadas estáticamente, ver
 | `M11 — asynchronous_support` | `supabase/migrations/20260810160112_asynchronous_support.sql` | `496f9c0` |
 | `M12 — sensitive_evidence_and_catalog_resources` | `supabase/migrations/20260810164914_sensitive_evidence_and_catalog_resources.sql` | `0460448` |
 
-“Publicadas” significa que las migraciones fueron versionadas y publicadas en `origin/main`. **Ninguna migración había sido aplicada localmente ni remotamente a Supabase en el momento de esta sincronización documental.**
+“Publicadas” significa que las migraciones fueron versionadas y publicadas en `origin/main`.
 
-Las validaciones realizadas sobre `M01` a `M12` fueron estáticas y de repositorio. No debe afirmarse que las migraciones fueron ejecutadas o validadas contra PostgreSQL o contra el proyecto remoto de Supabase.
+`M01` a `M12` permanecen intactas en Git después de la aplicación remota.
+
+#### Historial remoto aplicado de CM-M03.2
+
+Las migraciones de `CM-M03.2` fueron aplicadas físicamente al proyecto remoto con versiones generadas durante la aplicación remota. El historial remoto verificado es:
+
+| Módulo | Versión remota registrada | Nombre registrado |
+|---|---:|---|
+| `M01` | `20260810234636` | `catalog_core` |
+| `M02` | `20260810234706` | `packages_and_classifications` |
+| `M03` | `20260810234713` | `operational_identity_foundation` |
+| `M04` | `20260810234726` | `operational_accounts_and_assignments` |
+| `M05` | `20260810234733` | `customers_personal_accounts_addresses` |
+| `M06` | `20260810234743` | `authenticated_carts` |
+| `M07` | `20260810234800` | `orders_and_historical_snapshots` |
+| `M08` | `20260810234808` | `inventory_movements` |
+| `M09` | `20260810234823` | `order_preparation` |
+| `M10` | `20260810234848` | `order_delivery` |
+| `M11` | `20260810234904` | `asynchronous_support` |
+| `M12` | `20260810234915` | `sensitive_evidence_and_catalog_resources` |
+
+Existe drift conocido entre los timestamps de los archivos locales y las versiones registradas remotamente. Ese drift queda pendiente de reconciliación futura mediante un procedimiento explícitamente aprobado.
+
+Hasta reconciliar el historial, no debe ejecutarse `supabase db push` a ciegas, no deben reaplicarse `M01` a `M12`, no debe editarse manualmente `supabase_migrations.schema_migrations` y no debe modificarse el SQL de las migraciones ya aprobadas.
 
 #### Alcance físico implementado hasta M12
 
@@ -1063,7 +1088,7 @@ Además de las decisiones conceptuales de `CM-M03.1`, durante `CM-M03.2` quedaro
 - La evidencia sensible adicional puede eliminarse anticipadamente y no sustituye el historial logístico.
 - Los recursos editoriales del catálogo pueden pertenecer a Producto, Presentación vendible o Paquete, sin almacenar SKU, precio, inventario, bucket, URL, proveedor ni credenciales.
 - La Solicitud de atención asincrónica conserva conversación, mensajes, resolución de atención y causa de cierre sin modificar por sí sola Pedido, Preparación o Entrega.
-- `M13 — transversal_audit` permanece diferida a `CM-M03.3`; `public.audit_events` todavía no existe.
+- La auditoría transversal, anteriormente diferida como `M13`, se materializa en `CM-M03.3-S01` y no forma parte de `CM-M03.2`.
 
 #### Línea base remota de Supabase
 
@@ -1093,13 +1118,15 @@ Estado verificado:
 - Event trigger `ensure_rls`: existe, está habilitado, se ejecuta en `ddl_command_end` e invoca `public.rls_auto_enable`.
 - Función `public.rls_auto_enable`: owner `postgres`, return type `event_trigger`.
 
-Como ninguna migración había sido aplicada localmente ni remotamente al momento de esta sincronización documental, la publicación de `M01` a `M12` en Git no modifica por sí sola esta línea base remota.
+Después de la aplicación remota de `M01` a `M12`, `CM-M03.2` creó 35 tablas propias de Cherry Mary en `public`.
 
 #### Objetos remotos preexistentes `ensure_rls` y `public.rls_auto_enable`
 
 `ensure_rls` y `public.rls_auto_enable` se clasifican como:
 
 > Objetos remotos preexistentes aceptados como condición técnica para la aplicación controlada de `M01` a `M12`.
+
+Después de la aplicación remota de `M01` a `M12` y de `CM-M03.3-S01`, estos objetos permanecen intactos. Cherry Mary no los adoptó como objetos propios, no los modificó y no los endureció.
 
 Estado verificado:
 
@@ -1129,6 +1156,8 @@ public.rls_auto_enable
 La definición inspeccionada recorre comandos DDL proporcionados por `pg_event_trigger_ddl_commands()` para `CREATE TABLE`, `CREATE TABLE AS` y `SELECT INTO`. Cuando el objeto creado corresponde a una tabla o tabla particionada del esquema `public`, intenta ejecutar `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`. La función registra el éxito o fallo mediante mensajes de log. No crea políticas RLS.
 
 Habilitar RLS no crea políticas de acceso. Sin políticas aplicables, habilitar RLS por sí solo no concede acceso a las tablas ni sustituye el diseño de `CM-M03.3`.
+
+El hardening de estos objetos permanece pendiente. Security Advisor mantiene advertencias por `EXECUTE` disponible sobre `public.rls_auto_enable`; no debe corregirse todavía sin autorización explícita de la guía.
 
 `public.rls_auto_enable` no debe:
 
@@ -1161,16 +1190,60 @@ Esta situación:
 - No bloqueó la creación local y estática de las migraciones.
 - Debe revisarse en un paso posterior expresamente autorizado.
 
+#### Estado de CM-M03.3 — Seguridad, RLS y auditoría transversal
+
+`CM-M03.3 — Diseño de seguridad, RLS y auditoría transversal` está **iniciado y en implementación**.
+
+`CM-M03.3-S01 — Fundación de autorización y auditoría transversal` está **implementada, aplicada remotamente y validada**.
+
+Archivo:
+
+`supabase/migrations/20260810220444_authorization_and_transversal_audit_foundation.sql`
+
+S01 creó:
+
+- Schema `private`.
+- Helper `private.current_operational_account_id()`.
+- Helper `private.current_operational_person_id()`.
+- Helper `private.has_capability(text)`.
+- Tabla `public.audit_events`.
+
+Estado remoto validado después de S01:
+
+- `public.audit_events` existe.
+- Hay 36 tablas en `public`.
+- 36/36 tablas de `public` tienen RLS habilitado.
+- Existen 0 policies después de S01.
+- S01 no creó policies.
+- S01 no creó triggers automáticos de auditoría.
+- `public.audit_events` es la materialización de la auditoría transversal anteriormente diferida como `M13` a `CM-M03.3`.
+- `public.audit_events` no debe registrarse como parte de `CM-M03.2`.
+
+Los helpers de S01:
+
+- Están en el schema `private`.
+- Son `SECURITY DEFINER`.
+- Usan `search_path` seguro.
+- Conceden `EXECUTE` a `authenticated`.
+- No conceden `EXECUTE` a `anon`.
+
+`CM-M03.3-S02 — Policies RLS` está **pendiente / no implementada**.
+
+S02 será el próximo paso únicamente después de:
+
+- Commit y push de S01.
+- Esta sincronización documental.
+- Revisión de la guía.
+
 #### Módulos todavía no iniciados o diferidos
 
-- `CM-M03.3 — RLS`: no iniciado.
+- `CM-M03.3-S02 — Policies RLS`: pendiente / no implementada.
 - `CM-M03.4 — Seed inicial`: no iniciado.
-- `M13 — transversal_audit`: diferida a `CM-M03.3`.
-- `public.audit_events`: todavía no existe.
+- Seed inicial: no iniciado.
 
-`M13` no forma parte de las migraciones aplicables de `CM-M03.2`. La materialización de auditoría transversal se retomará conjuntamente con `CM-M03.3`; en ese módulo deberán decidirse acceso, integridad, minimización y conservación antes de cerrar su diseño físico.
+La auditoría transversal ya fue materializada por `CM-M03.3-S01` en `public.audit_events`. No debe reclasificarse como `CM-M03.2`.
 
-La existencia de `M01` a `M12` no autoriza automáticamente la aplicación remota, RLS policies, seed, Storage, funciones, triggers, código de aplicación ni cambios de infraestructura.
+La existencia de `M01` a `M12` y de `S01` no autoriza automáticamente RLS policies, seed, Storage, funciones adicionales, triggers adicionales, código de aplicación ni cambios de infraestructura.
 
 ---
 
@@ -1290,23 +1363,26 @@ Decisiones y hallazgos vigentes:
 
 ### Estado de implementación de CM-M03.2
 
-- `M01` a `M12`: **implementadas, validadas estáticamente, versionadas y publicadas**.
+- `M01` a `M12`: **implementadas, aplicadas y validadas remotamente**.
+- Tablas propias creadas por `CM-M03.2`: **35**.
 - Aplicación local de migraciones: **no realizada**.
-- Aplicación remota a Supabase: **no realizada**.
-- `M13 — transversal_audit`: **diferida a `CM-M03.3`**.
-- `public.audit_events`: **todavía no existe**.
-- `CM-M03.3 — RLS`: **no iniciado**.
+- Aplicación remota a Supabase: **realizada y validada**.
+- Drift entre timestamps locales y versiones remotas: **existente y pendiente de reconciliación futura**.
+- `M13 — transversal_audit`: **materializada en `CM-M03.3-S01` como `public.audit_events`**.
+- `public.audit_events`: **existe como parte de `CM-M03.3-S01`, no de `CM-M03.2`**.
+- `CM-M03.3 — RLS y auditoría transversal`: **iniciado y en implementación**.
+- `CM-M03.3-S01 — Fundación de autorización y auditoría transversal`: **implementada, aplicada remotamente y validada**.
+- `CM-M03.3-S02 — Policies RLS`: **pendiente / no implementada**.
 - `CM-M03.4 — Seed inicial`: **no iniciado**.
 
 ### Decisiones y trabajos todavía diferidos
 
 Permanecen diferidos o requieren autorización posterior:
 
-- Aplicación local o remota controlada de `M01` a `M12`.
-- `M13 — transversal_audit`, diferida a `CM-M03.3`.
-- Políticas RLS y matriz técnica de acceso de `CM-M03.3`.
+- Reconciliación futura del drift entre timestamps locales y versiones remotas de `M01` a `M12`.
+- `CM-M03.3-S02 — Policies RLS`.
+- Matriz técnica de acceso de `CM-M03.3`.
 - Seed de `CM-M03.4`.
-- Diseño físico de `public.audit_events`, incluyendo acceso, integridad, minimización y conservación.
 - Configuración y raíz de despliegue de Vercel.
 - Normalización del repositorio exterior.
 - Buckets, Storage, APIs, webhooks, funciones Edge e integraciones.
@@ -1324,24 +1400,23 @@ Ninguna decisión diferida puede resolverse implícitamente durante la programac
 
 El único próximo paso autorizado es:
 
-> `CM-M03.2-REMOTE-APPLY — Aplicación remota controlada de M01 a M12`.
+> Ninguna ejecución nueva está autorizada automáticamente. `CM-M03.3-S02 — Policies RLS` permanece pendiente / no implementada.
 
-Esta autorización podrá ejecutarse solo después de:
+`CM-M03.3-S02` podrá retomarse únicamente después de:
 
-1. Revisar y aprobar esta sincronización documental.
-2. Realizar manualmente commit de `CHERRY_MARY_PROJECT_CONTEXT.md`.
-3. Publicar ese commit en `origin/main`.
-4. Volver a obtener `git status --short` limpio.
+1. Commit y push de `CM-M03.3-S01`.
+2. Esta sincronización documental.
+3. Revisión de la guía.
 
 Hasta que esas condiciones se cumplan:
 
-- No debe ejecutarse `CM-M03.2-REMOTE-APPLY`.
-- No debe crearse M13.
-- No debe crearse `public.audit_events`.
-- No debe iniciarse `CM-M03.3 — RLS`.
+- No debe iniciarse `CM-M03.3-S02`.
 - No debe iniciarse `CM-M03.4 — Seed inicial`.
 - No deben crearse RLS policies.
 - No debe crearse seed.
+- No deben reaplicarse `M01` a `M12`.
+- No debe ejecutarse `supabase db push` a ciegas.
+- No debe reconciliarse el drift sin autorización explícita.
 - No debe modificarse código de aplicación.
 - No debe modificarse `public.rls_auto_enable`.
 - No debe modificarse `ensure_rls`.
