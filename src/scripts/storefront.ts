@@ -87,7 +87,7 @@ class Storefront {
       <span class="catalog-media">${this.image(catalogResourceUrl(resource), resource?.alt_text || product.name)}</span>
       <div class="catalog-card-body">
         <div class="catalog-card-copy"><h2>${escapeHtml(product.name)}</h2><p>${escapeHtml(product.description || 'Informacion comercial pendiente.')}</p></div>
-        <div class="catalog-meta"><span class="price">${first ? `Desde ${price}` : price}</span><span class="availability ${totalAvailability ? '' : 'out'}">${totalAvailability ? `${totalAvailability} disponibles` : 'Sin disponibilidad'}</span></div>
+        <div class="catalog-meta"><span class="price">${price}</span><span class="availability ${totalAvailability ? '' : 'out'}">${totalAvailability ? 'Disponible' : 'Sin disponibilidad'}</span></div>
       </div>
     </a>`;
   }
@@ -100,7 +100,7 @@ class Storefront {
       <a class="catalog-media" href="/paquetes/detalle?id=${itemPackage.id}"><span class="catalog-card-tag">Paquete</span>${this.image(catalogResourceUrl(resource), resource?.alt_text || itemPackage.name)}</a>
       <div class="catalog-card-body">
         <div class="catalog-card-copy"><h2><a href="/paquetes/detalle?id=${itemPackage.id}">${escapeHtml(itemPackage.name)}</a></h2><p>${escapeHtml(itemPackage.description || 'Combinacion disponible por tiempo limitado.')}</p></div>
-        <div class="catalog-meta"><span class="price">${formatMoney(itemPackage.current_price_amount_minor, itemPackage.currency_code)}</span><span class="availability ${availability ? '' : 'out'}">${availability ? `${availability} disponibles` : 'Sin disponibilidad'}</span></div>
+        <div class="catalog-meta"><span class="price">${formatMoney(itemPackage.current_price_amount_minor, itemPackage.currency_code)}</span><span class="availability ${availability ? '' : 'out'}">${availability ? 'Disponible' : 'Sin disponibilidad'}</span></div>
         <div class="card-actions"><a class="card-link" href="/paquetes/detalle?id=${itemPackage.id}">Ver detalle <span aria-hidden="true">&rarr;</span></a><button class="button primary compact" data-add-kind="package" data-add-id="${itemPackage.id}" ${availability ? '' : 'disabled'}>Agregar</button></div>
       </div>
     </article>`;

@@ -1,7 +1,13 @@
 import { loadAccount, type CustomerAddress } from '../services/account';
 import { currentSession } from '../services/auth';
 import { loadRemoteCart } from '../services/cart';
-import { checkoutAuthenticated, checkoutGuest, type DestinationInput } from '../services/checkout';
+import {
+  checkoutAuthenticated,
+  checkoutGuest,
+  createStripeCheckout,
+  loadStripeCheckoutStatus,
+  type DestinationInput,
+} from '../services/checkout';
 import { formatMoney, loadPublicCatalog, resolveCartTarget, type CartTarget } from '../services/catalog';
 import { clearGuestCart, readGuestCart, type GuestCartItem } from '../stores/guest-cart';
 
@@ -10,6 +16,15 @@ function escapeHtml(value: unknown): string {
 }
 
 const root = document.querySelector<HTMLElement>('[data-checkout-app]');
+const paymentTokenKey = 'cherry-mary:stripe-payment-token';
+const pendingCheckoutKey = 'cherry-mary:pending-stripe-checkout';
+
+type PendingCheckout = {
+  checkout_url: string;
+  order_id: string;
+  order_number: string;
+  authenticated: boolean;
+};
 
 if (root) {
   const form = root.querySelector<HTMLFormElement>('[data-checkout-form]')!;
@@ -18,6 +33,51 @@ if (root) {
   let items: GuestCartItem[] = [];
   let addresses: CustomerAddress[] = [];
   let resolved: Array<{ item: GuestCartItem; target: CartTarget | null }> = [];
+
+  function confirmationTarget(): HTMLElement {
+    root!.querySelector<HTMLElement>('[data-checkout-loading]')!.hidden = true;
+    form.hidden = true;
+    const target = root!.querySelector<HTMLElement>('[data-checkout-confirmation]')!;
+    target.hidden = false;
+    return target;
+  }
+
+  async function showStripeReturn(sessionId: string): Promise<void> {
+    try {
+      const [session, status] = await Promise.all([
+        currentSession(),
+        loadStripeCheckoutStatus(sessionId),
+      ]);
+      authenticated = Boolean(session);
+      if (status.payment_status === 'paid') {
+        if (authenticated) window.dispatchEvent(new CustomEvent('cherry-mary:remote-cart-change'));
+        else clearGuestCart();
+        sessionStorage.removeItem(paymentTokenKey);
+        sessionStorage.removeItem(pendingCheckoutKey);
+      }
+
+      const paid = status.payment_status === 'paid';
+      const target = confirmationTarget();
+      target.innerHTML = `<span class="badge">${paid ? 'Pago confirmado' : 'Pago en proceso'}</span><h1>${paid ? 'Gracias por tu compra' : 'Estamos confirmando tu pago'}</h1><p>Tu referencia es <strong>${escapeHtml(status.order_number)}</strong>.</p><p>Total: <strong>${formatMoney(status.total_amount_minor, status.currency_code)}</strong>.</p>${paid ? '<p>Stripe confirmo el pago correctamente.</p>' : '<p>Actualiza esta pagina en unos momentos. El Pedido no avanzara hasta recibir la confirmacion de Stripe.</p>'}${authenticated ? `<a class="button primary" href="/cuenta/pedido?id=${status.order_id}">Ver Pedido</a>` : '<p class="notice">Conserva la referencia para cualquier consulta.</p>'}`;
+    } catch (error) {
+      const target = root!.querySelector<HTMLElement>('[data-checkout-error]')!;
+      root!.querySelector<HTMLElement>('[data-checkout-loading]')!.hidden = true;
+      target.textContent = error instanceof Error ? error.message : 'No se pudo confirmar el pago.';
+      target.hidden = false;
+    }
+  }
+
+  function showStripeCancellation(): void {
+    root!.querySelector<HTMLElement>('[data-checkout-loading]')!.hidden = true;
+    const saved = sessionStorage.getItem(pendingCheckoutKey);
+    let pending: PendingCheckout | null = null;
+    try { pending = saved ? JSON.parse(saved) as PendingCheckout : null; } catch { pending = null; }
+    const checkoutUrl = pending?.checkout_url?.startsWith('https://checkout.stripe.com/')
+      ? pending.checkout_url
+      : null;
+    const target = confirmationTarget();
+    target.innerHTML = `<span class="badge">Pago pendiente</span><h1>No se realizo ningun cargo</h1><p>Puedes volver a Stripe para completar el pago cuando estes listo.</p>${checkoutUrl ? `<a class="button primary" href="${escapeHtml(checkoutUrl)}">Reanudar pago</a>` : '<a class="button" href="/carrito">Volver al carrito</a>'}`;
+  }
 
   function setField(name: string, value: string | null): void {
     const field = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | null;
@@ -113,16 +173,19 @@ if (root) {
     }
     form.querySelectorAll<HTMLButtonElement>('button').forEach((button) => { button.disabled = true; });
     try {
+      const paymentToken = sessionStorage.getItem(paymentTokenKey) ?? crypto.randomUUID();
+      sessionStorage.setItem(paymentTokenKey, paymentToken);
       const confirmation = authenticated
-        ? await checkoutAuthenticated(cartId!, destination)
-        : await checkoutGuest(items, destination);
-      if (authenticated) window.dispatchEvent(new CustomEvent('cherry-mary:remote-cart-change'));
-      else clearGuestCart();
-      form.hidden = true;
-      const result = root!.querySelector<HTMLElement>('[data-checkout-confirmation]')!;
-      result.innerHTML = `<span class="badge">Pedido creado</span><h1>Gracias por tu compra</h1><p>Tu referencia es <strong>${escapeHtml(confirmation.order_number)}</strong>.</p><p>Total confirmado: <strong>${formatMoney(confirmation.total_amount_minor, confirmation.currency_code)}</strong>.</p><p>Estado comercial: ${escapeHtml(confirmation.commercial_status)}.</p>${authenticated ? `<a class="button primary" href="/cuenta/pedido?id=${confirmation.order_id}">Ver Pedido</a>` : '<p class="notice">La recuperacion en linea de Pedidos de invitado aun no esta disponible. Conserva esta referencia.</p>'}`;
-      result.hidden = false;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+        ? await checkoutAuthenticated(cartId!, destination, paymentToken)
+        : await checkoutGuest(items, destination, paymentToken);
+      const checkout = await createStripeCheckout(confirmation);
+      sessionStorage.setItem(pendingCheckoutKey, JSON.stringify({
+        checkout_url: checkout.checkout_url,
+        order_id: checkout.order_id,
+        order_number: checkout.order_number,
+        authenticated,
+      } satisfies PendingCheckout));
+      window.location.assign(checkout.checkout_url);
     } catch (error) {
       const target = root!.querySelector<HTMLElement>('[data-checkout-error]')!;
       target.textContent = error instanceof Error ? error.message : 'No se pudo crear el Pedido.';
@@ -131,5 +194,9 @@ if (root) {
     }
   });
 
-  void initialize();
+  const query = new URLSearchParams(window.location.search);
+  const stripeSessionId = query.get('stripe_session_id');
+  if (stripeSessionId) void showStripeReturn(stripeSessionId);
+  else if (query.get('stripe_cancelled') === '1') showStripeCancellation();
+  else void initialize();
 }

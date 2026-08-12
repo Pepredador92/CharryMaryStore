@@ -1,6 +1,6 @@
 <section class="page-band" data-checkout-app>
   <div class="page-inner">
-    <div class="page-heading"><div><h1>Checkout</h1><p>Confirma destino y contacto. No se solicitaran datos de pago.</p></div></div>
+    <div class="page-heading"><div><h1>Checkout</h1><p>Confirma destino y contacto. El pago se completa de forma segura en Stripe.</p></div></div>
     <div class="state-box" data-checkout-loading><div><strong>Revalidando carrito</strong>Consultando precios y disponibilidad vigentes.</div></div>
     <form class="checkout-layout" data-checkout-form hidden>
       <section class="panel">
@@ -24,8 +24,8 @@
         <h2>Tu Pedido</h2>
         <div data-checkout-lines></div>
         <div class="summary-row total"><span>Total</span><strong data-checkout-total>$0.00</strong></div>
-        <p class="summary-note">El servidor obtiene los precios actuales y crea todos los snapshots en una unica transaccion. El Pedido no descuenta ni reserva inventario.</p>
-        <button class="button primary" type="submit">Crear Pedido</button>
+        <p class="summary-note">El servidor confirma los precios antes de abrir Stripe. Cherry Mary no recibe ni almacena los datos de tu tarjeta.</p>
+        <button class="button primary" type="submit">Pagar con Stripe</button>
       </aside>
     </form>
     <div class="notice error" data-checkout-error hidden></div>

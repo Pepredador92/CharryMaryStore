@@ -89,15 +89,18 @@ export async function deactivateAddress(id: string): Promise<void> {
 
 export async function loadOrderDetail(orderId: string): Promise<{
   order: Record<string, unknown>;
+  payment: Record<string, unknown> | null;
   destination: Record<string, unknown> | null;
   items: Array<Record<string, unknown> & { components: Record<string, unknown>[] }>;
 }> {
-  const [order, destination, items] = await Promise.all([
+  const [order, payment, destination, items] = await Promise.all([
     supabase.from('orders').select('*').eq('id', orderId).single(),
+    supabase.from('order_payments').select('*').eq('order_id', orderId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('order_destinations').select('*').eq('order_id', orderId).eq('is_current', true).maybeSingle(),
     supabase.from('order_items').select('*').eq('order_id', orderId).order('line_number'),
   ]);
   if (order.error) throw order.error;
+  if (payment.error) throw payment.error;
   if (destination.error) throw destination.error;
   if (items.error) throw items.error;
   const itemRows = items.data ?? [];
@@ -108,6 +111,7 @@ export async function loadOrderDetail(orderId: string): Promise<{
   if (componentResult.error) throw componentResult.error;
   return {
     order: order.data,
+    payment: payment.data,
     destination: destination.data,
     items: itemRows.map((item) => ({
       ...item,
