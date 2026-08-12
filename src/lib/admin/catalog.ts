@@ -1,7 +1,8 @@
-import { supabase } from '../supabase/client';
+import { supabase, supabaseKey, supabaseUrl } from '../supabase/client';
 
 export const CATALOG_BUCKET = 'catalog-resources';
 export const CATALOG_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const CATALOG_UPLOAD_TIMEOUT_MS = 30_000;
 
 const CATALOG_IMAGE_EXTENSIONS: Record<string, string> = {
   'image/avif': 'avif',
@@ -154,12 +155,43 @@ function catalogImageMetadata(file: File): { contentType: string; extension: str
   return { contentType, extension: CATALOG_IMAGE_EXTENSIONS[contentType] };
 }
 
-async function readCatalogImage(file: File): Promise<ArrayBuffer> {
-  try {
-    return await file.arrayBuffer();
-  } catch {
-    throw new Error('No se pudo leer la imagen seleccionada. Vuelve a elegir el archivo.');
+async function uploadCatalogFile(path: string, file: File, contentType: string): Promise<void> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) {
+    throw new Error(error?.message ?? 'La sesión expiró. Inicia sesión nuevamente.');
   }
+
+  const encodedPath = [CATALOG_BUCKET, ...path.split('/')].map(encodeURIComponent).join('/');
+
+  await new Promise<void>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open('POST', `${supabaseUrl}/storage/v1/object/${encodedPath}`);
+    request.timeout = CATALOG_UPLOAD_TIMEOUT_MS;
+    request.setRequestHeader('apikey', supabaseKey);
+    request.setRequestHeader('authorization', `Bearer ${data.session.access_token}`);
+    request.setRequestHeader('cache-control', 'max-age=3600');
+    request.setRequestHeader('content-type', contentType);
+    request.setRequestHeader('x-upsert', 'false');
+
+    request.addEventListener('load', () => {
+      if (request.status >= 200 && request.status < 300) {
+        resolve();
+        return;
+      }
+
+      let message = request.statusText || `Error ${request.status}`;
+      try {
+        const response = JSON.parse(request.responseText) as { message?: string; error?: string };
+        message = response.message || response.error || message;
+      } catch {
+        // Keep the HTTP status when Storage does not return JSON.
+      }
+      reject(new Error(`No se pudo subir la imagen: ${message}`));
+    });
+    request.addEventListener('error', () => reject(new Error('No se pudo conectar con el almacenamiento de imágenes.')));
+    request.addEventListener('timeout', () => reject(new Error('La carga tardó demasiado. Inténtala nuevamente.')));
+    request.send(file);
+  });
 }
 
 function requireData<T>(result: QueryResult<T>, context: string): T {
@@ -369,16 +401,8 @@ export async function uploadCatalogResource(input: {
   sortOrder: number;
 }): Promise<void> {
   const { contentType, extension } = catalogImageMetadata(input.file);
-  const fileBody = await readCatalogImage(input.file);
   const path = `${input.ownerType}/${input.ownerId}/${crypto.randomUUID()}.${extension}`;
-  const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, fileBody, {
-    cacheControl: '3600',
-    contentType,
-    upsert: false,
-  });
-  if (upload.error) {
-    throw new Error(`No se pudo subir la imagen: ${upload.error.message}`);
-  }
+  await uploadCatalogFile(path, input.file, contentType);
 
   const ownerColumns = {
     product_id: input.ownerType === 'product' ? input.ownerId : null,
@@ -420,21 +444,13 @@ export async function setPrimaryCatalogResource(id: string): Promise<void> {
 
 export async function replaceCatalogResource(resource: CatalogResource, file: File): Promise<void> {
   const { contentType, extension } = catalogImageMetadata(file);
-  const fileBody = await readCatalogImage(file);
   const owner = resource.product_id
     ? `product/${resource.product_id}`
     : resource.presentation_id
       ? `presentation/${resource.presentation_id}`
       : `package/${resource.package_id}`;
   const path = `${owner}/${crypto.randomUUID()}.${extension}`;
-  const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, fileBody, {
-    cacheControl: '3600',
-    contentType,
-    upsert: false,
-  });
-  if (upload.error) {
-    throw new Error(`No se pudo subir el reemplazo: ${upload.error.message}`);
-  }
+  await uploadCatalogFile(path, file, contentType);
 
   const update = await supabase
     .from('catalog_resources')
