@@ -15,32 +15,57 @@ const path = Astro.url.pathname;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content="Catalogo y pedidos de Cherry Mary" />
+    {path === '/' && <link rel="preload" as="image" href="/images/cherry-mary-hero.jpg" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title} | Cherry Mary</title>
   </head>
   <body>
+    <div class="store-announcement">Explora a tu ritmo. Compra con privacidad.</div>
     <header class="store-header">
-      <a class="store-brand" href="/" aria-label="Cherry Mary, inicio">
-        <strong>Cherry Mary</strong>
-        <span>Detalles que se disfrutan</span>
-      </a>
-      <nav class="store-nav" aria-label="Navegacion principal">
-        <a class:list={{ active: path.startsWith('/productos') }} href="/productos">Productos</a>
-        <a class:list={{ active: path.startsWith('/paquetes') }} href="/paquetes">Paquetes</a>
-        <a class:list={{ active: path.startsWith('/cuenta') || path === '/acceso' }} href="/cuenta" data-account-link>Cuenta</a>
-        <a class:list={{ active: path === '/ayuda' }} href="/ayuda">Ayuda</a>
-        <a class:list={{ active: path === '/carrito' }} href="/carrito">Carrito <span class="cart-count" data-cart-count>0</span></a>
-        <a href="/admin" data-admin-link hidden>Administracion</a>
-      </nav>
-      <button class="text-button" type="button" data-store-sign-out hidden>Cerrar sesion</button>
+      <div class="store-header-inner">
+        <a class="store-brand" href="/" aria-label="Cherry Mary, inicio">
+          <span class="store-brand-mark" aria-hidden="true">CM</span>
+          <span class="store-brand-copy">
+            <strong>Cherry Mary</strong>
+            <span>Bienestar para disfrutar</span>
+          </span>
+        </a>
+        <nav class="store-nav" aria-label="Navegacion principal">
+          <a class:list={{ active: path.startsWith('/productos') }} href="/productos">Productos</a>
+          <a class:list={{ active: path.startsWith('/paquetes') }} href="/paquetes">Paquetes</a>
+          <a class:list={{ active: path === '/ayuda' }} href="/ayuda">Ayuda</a>
+          <a class:list={{ active: path.startsWith('/cuenta') || path === '/acceso' }} href="/cuenta" data-account-link>Cuenta</a>
+          <a class:list={{ active: path === '/carrito' }} href="/carrito">Carrito <span class="cart-count" data-cart-count>0</span></a>
+          <a href="/admin" data-admin-link hidden>Administracion</a>
+        </nav>
+        <button class="text-button" type="button" data-store-sign-out hidden>Cerrar sesion</button>
+      </div>
     </header>
     <div class="shell-notice" data-shell-notice hidden role="status"></div>
     <main>
       <slot />
     </main>
     <footer class="store-footer">
-      <strong>Cherry Mary</strong>
-      <span>Catalogo sujeto a disponibilidad. El carrito no reserva inventario.</span>
+      <div class="store-footer-inner">
+        <div class="store-footer-brand">
+          <strong>Cherry Mary</strong>
+          <p>Bienestar intimo con una experiencia clara, privada y sin complicaciones.</p>
+        </div>
+        <nav aria-label="Explorar">
+          <strong>Explora</strong>
+          <a href="/productos">Productos</a>
+          <a href="/paquetes">Paquetes</a>
+        </nav>
+        <nav aria-label="Soporte">
+          <strong>Estamos cerca</strong>
+          <a href="/ayuda">Ayuda</a>
+          <a href="/cuenta">Mi cuenta</a>
+        </nav>
+      </div>
+      <div class="store-footer-legal">
+        <span>Cherry Mary</span>
+        <span>Catalogo sujeto a disponibilidad. El carrito no reserva inventario.</span>
+      </div>
     </footer>
     <script>
       import '../scripts/store-shell';

@@ -73,36 +73,35 @@ class Storefront {
   private image(url: string | null, alt: string): string {
     return url
       ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" />`
-      : '<span>Imagen pendiente</span>';
+      : '<span class="catalog-placeholder"><strong>Cherry Mary</strong><span>Imagen proximamente</span></span>';
   }
 
   private productCard(product: Product): string {
     if (!this.snapshot) return '';
     const presentations = this.snapshot.presentations.filter((item) => item.product_id === product.id);
     const first = presentations[0];
-    const price = first ? formatMoney(first.current_price_amount_minor, first.currency_code) : 'Sin Presentaciones';
+    const price = first ? formatMoney(first.current_price_amount_minor, first.currency_code) : 'Proximamente';
     const totalAvailability = presentations.reduce((sum, item) => sum + presentationAvailability(this.snapshot!, item.id), 0);
     const resource = primaryResource(this.snapshot, 'product', product.id);
-    return `<article class="catalog-card">
-      <a class="catalog-media" href="/productos/detalle?id=${product.id}">${this.image(catalogResourceUrl(resource), resource?.alt_text || product.name)}</a>
+    return `<a class="catalog-card catalog-card-product" href="/productos/detalle?id=${product.id}">
+      <span class="catalog-media">${this.image(catalogResourceUrl(resource), resource?.alt_text || product.name)}</span>
       <div class="catalog-card-body">
-        <div><h2>${escapeHtml(product.name)}</h2><p>${escapeHtml(product.description || 'Informacion comercial pendiente.')}</p></div>
-        <div class="catalog-meta"><span class="price">Desde ${price}</span><span class="availability ${totalAvailability ? '' : 'out'}">${totalAvailability ? `${totalAvailability} disponibles` : 'Sin disponibilidad'}</span></div>
-        <a class="button" href="/productos/detalle?id=${product.id}">Ver Presentaciones</a>
+        <div class="catalog-card-copy"><h2>${escapeHtml(product.name)}</h2><p>${escapeHtml(product.description || 'Informacion comercial pendiente.')}</p></div>
+        <div class="catalog-meta"><span class="price">${first ? `Desde ${price}` : price}</span><span class="availability ${totalAvailability ? '' : 'out'}">${totalAvailability ? `${totalAvailability} disponibles` : 'Sin disponibilidad'}</span></div>
       </div>
-    </article>`;
+    </a>`;
   }
 
   private packageCard(itemPackage: Package): string {
     if (!this.snapshot) return '';
     const availability = packageAvailability(this.snapshot, itemPackage.id);
     const resource = primaryResource(this.snapshot, 'package', itemPackage.id);
-    return `<article class="catalog-card">
-      <a class="catalog-media" href="/paquetes/detalle?id=${itemPackage.id}">${this.image(catalogResourceUrl(resource), resource?.alt_text || itemPackage.name)}</a>
+    return `<article class="catalog-card catalog-card-package">
+      <a class="catalog-media" href="/paquetes/detalle?id=${itemPackage.id}"><span class="catalog-card-tag">Paquete</span>${this.image(catalogResourceUrl(resource), resource?.alt_text || itemPackage.name)}</a>
       <div class="catalog-card-body">
-        <div><h2>${escapeHtml(itemPackage.name)}</h2><p>${escapeHtml(itemPackage.description || 'Combinacion disponible por tiempo limitado.')}</p></div>
+        <div class="catalog-card-copy"><h2><a href="/paquetes/detalle?id=${itemPackage.id}">${escapeHtml(itemPackage.name)}</a></h2><p>${escapeHtml(itemPackage.description || 'Combinacion disponible por tiempo limitado.')}</p></div>
         <div class="catalog-meta"><span class="price">${formatMoney(itemPackage.current_price_amount_minor, itemPackage.currency_code)}</span><span class="availability ${availability ? '' : 'out'}">${availability ? `${availability} disponibles` : 'Sin disponibilidad'}</span></div>
-        <div class="button-row"><a class="button" href="/paquetes/detalle?id=${itemPackage.id}">Ver detalle</a><button class="button primary" data-add-kind="package" data-add-id="${itemPackage.id}" ${availability ? '' : 'disabled'}>Agregar</button></div>
+        <div class="card-actions"><a class="card-link" href="/paquetes/detalle?id=${itemPackage.id}">Ver detalle <span aria-hidden="true">&rarr;</span></a><button class="button primary compact" data-add-kind="package" data-add-id="${itemPackage.id}" ${availability ? '' : 'disabled'}>Agregar</button></div>
       </div>
     </article>`;
   }

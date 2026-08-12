@@ -16,18 +16,62 @@ const headings = {
     <>
       <section class="home-hero">
         <div class="home-hero-content">
+          <span class="hero-kicker">Bienestar intimo, a tu manera</span>
           <h1>Cherry Mary</h1>
-          <p>Productos y paquetes preparados con atencion al detalle. Explora el catalogo vigente y arma tu pedido.</p>
+          <p>Encuentra productos elegidos para conocerte, disfrutar y explorar con confianza.</p>
           <div class="button-row">
-            <a class="button primary" href="/productos">Ver Productos</a>
-            <a class="button secondary" href="/paquetes">Explorar Paquetes</a>
+            <a class="button primary" href="/productos">Descubrir productos</a>
+            <a class="button secondary" href="/paquetes">Ver paquetes</a>
+          </div>
+        </div>
+      </section>
+      <section class="discovery-section">
+        <div class="page-inner">
+          <div class="discovery-heading">
+            <span class="section-kicker">Encuentra tu camino</span>
+            <h2>Tu curiosidad abre nuevas formas de disfrutar</h2>
+          </div>
+          <div class="discovery-grid">
+            <article class="discovery-card">
+              <img src="/images/discover-first.jpg" alt="Escultura roja sobre un pedestal rosa" loading="lazy" />
+              <div class="discovery-card-copy">
+                <h3>Mi primera eleccion</h3>
+                <p>Empezar a explorar</p>
+                <a class="button category-button" href="/productos">Descubrir</a>
+              </div>
+            </article>
+            <article class="discovery-card">
+              <img src="/images/discover-solo.jpg" alt="Espejo rosa con cerezas y liston verde" loading="lazy" />
+              <div class="discovery-card-copy">
+                <h3>De mi, para mi</h3>
+                <p>Disfrutar a mi ritmo</p>
+                <a class="button category-button" href="/productos">Ver productos</a>
+              </div>
+            </article>
+            <article class="discovery-card">
+              <img src="/images/discover-together.jpg" alt="Esculturas roja y verde entrelazadas" loading="lazy" />
+              <div class="discovery-card-copy">
+                <h3>Juntos se disfruta mas</h3>
+                <p>Descubrir en pareja</p>
+                <a class="button category-button" href="/paquetes">Ver paquetes</a>
+              </div>
+            </article>
+            <article class="discovery-card">
+              <img src="/images/discover-new.jpg" alt="Esculturas de colores en equilibrio" loading="lazy" />
+              <div class="discovery-card-copy">
+                <h3>Nuevas sensaciones</h3>
+                <p>Probar algo diferente</p>
+                <a class="button category-button" href="/productos">Explorar</a>
+              </div>
+            </article>
           </div>
         </div>
       </section>
       <section class="page-band white">
         <div class="page-inner">
           <div class="page-heading">
-            <div><h2>Seleccion actual</h2><p>Articulos vigentes consultados directamente desde el catalogo.</p></div>
+            <div><span class="section-kicker">Para empezar</span><h2>Favoritos para descubrir</h2><p>Una seleccion vigente del catalogo Cherry Mary.</p></div>
+            <a class="section-link" href="/productos">Ver todo <span aria-hidden="true">&rarr;</span></a>
           </div>
           <div class="catalog-grid" data-home-featured></div>
         </div>
@@ -39,8 +83,12 @@ const headings = {
     <section class="page-band">
       <div class="page-inner">
         <div class="page-heading">
-          <div><h1>{headings[mode][0]}</h1><p>{headings[mode][1]}</p></div>
+          <div><span class="section-kicker">Catalogo Cherry Mary</span><h1>{headings[mode][0]}</h1><p>{headings[mode][1]}</p></div>
         </div>
+        <nav class="catalog-tabs" aria-label="Secciones del catalogo">
+          <a class:list={{ active: mode === 'products' }} href="/productos">Productos</a>
+          <a class:list={{ active: mode === 'packages' }} href="/paquetes">Paquetes</a>
+        </nav>
         <div class="catalog-toolbar">
           <label>Buscar<input type="search" placeholder="Nombre o descripcion" data-catalog-search /></label>
           <label>Clasificacion<select data-classification-filter><option value="">Todas</option></select></label>
