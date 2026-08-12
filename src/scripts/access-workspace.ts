@@ -240,7 +240,7 @@ class AccessWorkspace {
     form.reset();
     (form.elements.namedItem('account_id') as HTMLInputElement).value = account.account_id;
     this.el<HTMLElement>('[data-capability-account]').textContent = `${account.display_name} · ${account.email}`;
-    this.el<HTMLElement>('[data-edit-capabilities]').innerHTML = this.capabilityInputs(
+    this.el<HTMLElement>('[data-capability-list]').innerHTML = this.capabilityInputs(
       this.snapshot.capabilities,
       new Set(account.capability_codes),
     );
