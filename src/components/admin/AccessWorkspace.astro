@@ -1,0 +1,139 @@
+<div data-access-workspace>
+  <section class="auth-panel" data-auth-panel hidden>
+    <h1>Acceso operativo</h1>
+    <p>Ingresa con una cuenta autorizada para consultar o administrar accesos.</p>
+    <form data-auth-form>
+      <label>Correo<input name="email" type="email" autocomplete="username" required /></label>
+      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required /></label>
+      <p class="notice error" data-auth-error hidden></p>
+      <button class="button primary" type="submit">Ingresar</button>
+    </form>
+  </section>
+
+  <section class="state-box panel" data-loading-state>
+    <div><strong>Cargando accesos</strong>Consultando cuentas operativas y capacidades.</div>
+  </section>
+
+  <section class="state-box panel" data-access-state hidden>
+    <div><strong>Acceso restringido</strong>Tu cuenta no tiene acceso a la administración de cuentas operativas.</div>
+  </section>
+
+  <div data-workspace-content hidden>
+    <header class="page-heading">
+      <div>
+        <h1>Accesos operativos</h1>
+        <p>Personas autorizadas, estado de sus cuentas y capacidades vigentes.</p>
+      </div>
+      <button class="button primary" type="button" data-create-access hidden>Alta operativa</button>
+    </header>
+
+    <section class="stats-grid access-stats" data-access-stats></section>
+
+    <section class="panel">
+      <div class="filter-bar">
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Buscar por nombre, correo o referencia"
+          aria-label="Buscar accesos"
+          data-access-search
+        />
+      </div>
+      <div class="table-wrap" data-access-table></div>
+    </section>
+  </div>
+
+  <div class="toast notice" data-toast hidden></div>
+
+  <dialog class="wide-dialog" data-create-dialog>
+    <div class="dialog-head">
+      <h2>Alta operativa</h2>
+      <button class="icon-button" type="button" aria-label="Cerrar" title="Cerrar" data-close-dialog>×</button>
+    </div>
+    <form class="dialog-body" data-create-form>
+      <div class="form-grid">
+        <label class="wide">
+          Correo del usuario autenticado
+          <input name="email" type="email" autocomplete="off" required />
+        </label>
+        <label>
+          Referencia interna
+          <input name="internal_reference" maxlength="120" required />
+        </label>
+        <label>
+          Nombre visible
+          <input name="display_name" maxlength="160" required />
+        </label>
+        <label class="wide">
+          Motivo del alta
+          <textarea name="cause" required></textarea>
+        </label>
+      </div>
+      <fieldset class="capability-fieldset">
+        <legend>Capacidades iniciales</legend>
+        <div class="capability-toolbar">
+          <button class="button small" type="button" data-select-all>Seleccionar todas</button>
+          <button class="button small" type="button" data-clear-all>Limpiar</button>
+        </div>
+        <div class="capability-grid" data-create-capabilities></div>
+      </fieldset>
+      <div class="form-actions">
+        <button class="button" type="button" data-close-dialog>Cancelar</button>
+        <button class="button primary" type="submit">Crear acceso</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="wide-dialog" data-capability-dialog>
+    <div class="dialog-head">
+      <div>
+        <h2>Capacidades</h2>
+        <p class="dialog-subtitle" data-capability-account></p>
+      </div>
+      <button class="icon-button" type="button" aria-label="Cerrar" title="Cerrar" data-close-dialog>×</button>
+    </div>
+    <form class="dialog-body" data-capability-form>
+      <input name="account_id" type="hidden" />
+      <fieldset class="capability-fieldset">
+        <legend>Capacidades vigentes</legend>
+        <div class="capability-toolbar">
+          <button class="button small" type="button" data-select-all>Seleccionar todas</button>
+          <button class="button small" type="button" data-clear-all>Limpiar</button>
+        </div>
+        <div class="capability-grid" data-edit-capabilities></div>
+      </fieldset>
+      <label>
+        Motivo del cambio
+        <textarea name="cause" required></textarea>
+      </label>
+      <div class="form-actions">
+        <button class="button" type="button" data-close-dialog>Cancelar</button>
+        <button class="button primary" type="submit">Guardar capacidades</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog data-status-dialog>
+    <div class="dialog-head">
+      <h2 data-status-title>Cambiar estado</h2>
+      <button class="icon-button" type="button" aria-label="Cerrar" title="Cerrar" data-close-dialog>×</button>
+    </div>
+    <form class="dialog-body" data-status-form>
+      <input name="account_id" type="hidden" />
+      <input name="status" type="hidden" />
+      <p class="status-confirmation" data-status-confirmation></p>
+      <label>
+        Motivo del cambio
+        <textarea name="cause" required></textarea>
+      </label>
+      <div class="form-actions">
+        <button class="button" type="button" data-close-dialog>Cancelar</button>
+        <button class="button primary" type="submit" data-status-submit>Confirmar</button>
+      </div>
+    </form>
+  </dialog>
+</div>
+
+<script>
+  import '../../scripts/access-workspace';
+</script>

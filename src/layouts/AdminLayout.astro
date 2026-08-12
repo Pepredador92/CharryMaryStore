@@ -3,7 +3,7 @@ import '../styles/admin.css';
 
 interface Props {
   title: string;
-  section: 'dashboard' | 'products' | 'packages' | 'inventory' | 'classifications' | 'orders' | 'preparation' | 'deliveries' | 'support' | 'audit';
+  section: 'dashboard' | 'products' | 'packages' | 'inventory' | 'classifications' | 'orders' | 'preparation' | 'deliveries' | 'support' | 'audit' | 'access';
 }
 
 const { title, section } = Astro.props;
@@ -14,6 +14,7 @@ const navItems = [
   { id: 'deliveries', label: 'Entregas', href: '/admin/entregas' },
   { id: 'support', label: 'Atención', href: '/admin/atencion' },
   { id: 'audit', label: 'Auditoría', href: '/admin/auditoria' },
+  { id: 'access', label: 'Accesos', href: '/admin/accesos' },
   { id: 'products', label: 'Productos', href: '/admin/productos' },
   { id: 'packages', label: 'Paquetes', href: '/admin/paquetes' },
   { id: 'inventory', label: 'Inventario', href: '/admin/inventario' },
