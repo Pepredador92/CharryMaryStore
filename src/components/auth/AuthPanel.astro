@@ -1,0 +1,26 @@
+<section class="auth-shell" data-auth-app>
+  <div class="panel auth-panel">
+    <div class="page-heading"><div><h1>Tu cuenta</h1><p>Guarda direcciones, carrito y consulta tus Pedidos.</p></div></div>
+    <div class="auth-tabs" role="tablist">
+      <button class="active" type="button" role="tab" aria-selected="true" data-auth-tab="login">Iniciar sesion</button>
+      <button type="button" role="tab" aria-selected="false" data-auth-tab="register">Crear cuenta</button>
+    </div>
+    <form data-login-form>
+      <label>Correo electronico<input name="email" type="email" autocomplete="email" required /></label>
+      <label>Contrasena<input name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
+      <button class="button primary" type="submit">Iniciar sesion</button>
+    </form>
+    <form data-register-form hidden>
+      <label>Nombre preferido<input name="preferred_name" autocomplete="name" maxlength="120" required /></label>
+      <label>Correo electronico<input name="email" type="email" autocomplete="email" required /></label>
+      <label>Contrasena<input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
+      <label>Confirmar contrasena<input name="password_confirmation" type="password" autocomplete="new-password" minlength="8" required /></label>
+      <button class="button primary" type="submit">Crear cuenta</button>
+    </form>
+    <div class="notice" data-auth-message hidden role="status"></div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/auth-page';
+</script>

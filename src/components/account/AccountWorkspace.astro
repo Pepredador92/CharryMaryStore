@@ -1,0 +1,43 @@
+<section class="page-band" data-account-app>
+  <div class="page-inner">
+    <div class="page-heading"><div><h1>Mi cuenta</h1><p>Datos propios, direcciones activas e historial de Pedidos.</p></div></div>
+    <div class="state-box" data-account-loading><div><strong>Cargando cuenta</strong>Verificando tu sesion.</div></div>
+    <div class="account-layout" data-account-content hidden>
+      <div class="panel">
+        <h2>Pedidos</h2>
+        <div class="order-list" data-order-list></div>
+      </div>
+      <div class="panel">
+        <h2>Datos de cuenta</h2>
+        <div data-account-summary></div>
+        <h2>Direcciones</h2>
+        <div class="address-list" data-address-list></div>
+        <button class="button" type="button" data-new-address>Agregar direccion</button>
+      </div>
+    </div>
+    <div class="notice error" data-account-error hidden></div>
+  </div>
+
+  <dialog data-address-dialog>
+    <form class="panel form-grid" data-address-form>
+      <input name="id" type="hidden" />
+      <h2 class="wide">Direccion</h2>
+      <label>Etiqueta<input name="label" placeholder="Casa, oficina" maxlength="80" /></label>
+      <label>Destinatario<input name="recipient_name" maxlength="160" /></label>
+      <label>Telefono<input name="contact_phone" autocomplete="tel" maxlength="40" /></label>
+      <label>Pais<input name="country_code" value="MX" minlength="2" maxlength="2" required /></label>
+      <label class="wide">Calle y numero<input name="line_1" autocomplete="address-line1" required /></label>
+      <label class="wide">Interior o referencia<input name="line_2" autocomplete="address-line2" /></label>
+      <label>Colonia<input name="neighborhood" /></label>
+      <label>Ciudad<input name="city" autocomplete="address-level2" required /></label>
+      <label>Estado o region<input name="region" autocomplete="address-level1" required /></label>
+      <label>Codigo postal<input name="postal_code" autocomplete="postal-code" required /></label>
+      <label class="wide">Instrucciones de entrega<textarea name="delivery_instructions"></textarea></label>
+      <div class="form-actions wide"><button class="button" type="button" data-close-address>Cancelar</button><button class="button primary" type="submit">Guardar direccion</button></div>
+    </form>
+  </dialog>
+</section>
+
+<script>
+  import '../../scripts/account-page';
+</script>

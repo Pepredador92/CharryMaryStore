@@ -1,0 +1,48 @@
+---
+import '../styles/store.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const path = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="Catalogo y pedidos de Cherry Mary" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} | Cherry Mary</title>
+  </head>
+  <body>
+    <header class="store-header">
+      <a class="store-brand" href="/" aria-label="Cherry Mary, inicio">
+        <strong>Cherry Mary</strong>
+        <span>Detalles que se disfrutan</span>
+      </a>
+      <nav class="store-nav" aria-label="Navegacion principal">
+        <a class:list={{ active: path.startsWith('/productos') }} href="/productos">Productos</a>
+        <a class:list={{ active: path.startsWith('/paquetes') }} href="/paquetes">Paquetes</a>
+        <a class:list={{ active: path.startsWith('/cuenta') || path === '/acceso' }} href="/cuenta" data-account-link>Cuenta</a>
+        <a class:list={{ active: path === '/carrito' }} href="/carrito">Carrito <span class="cart-count" data-cart-count>0</span></a>
+        <a href="/admin" data-admin-link hidden>Administracion</a>
+      </nav>
+      <button class="text-button" type="button" data-store-sign-out hidden>Cerrar sesion</button>
+    </header>
+    <div class="shell-notice" data-shell-notice hidden role="status"></div>
+    <main>
+      <slot />
+    </main>
+    <footer class="store-footer">
+      <strong>Cherry Mary</strong>
+      <span>Catalogo sujeto a disponibilidad. El carrito no reserva inventario.</span>
+    </footer>
+    <script>
+      import '../scripts/store-shell';
+    </script>
+  </body>
+</html>

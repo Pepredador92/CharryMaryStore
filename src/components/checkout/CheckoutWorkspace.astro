@@ -1,0 +1,38 @@
+<section class="page-band" data-checkout-app>
+  <div class="page-inner">
+    <div class="page-heading"><div><h1>Checkout</h1><p>Confirma destino y contacto. No se solicitaran datos de pago.</p></div></div>
+    <div class="state-box" data-checkout-loading><div><strong>Revalidando carrito</strong>Consultando precios y disponibilidad vigentes.</div></div>
+    <form class="checkout-layout" data-checkout-form hidden>
+      <section class="panel">
+        <h2>Destino</h2>
+        <label class="wide" data-address-picker-label hidden>Usar una direccion guardada<select data-address-picker><option value="">Capturar otra direccion</option></select></label>
+        <div class="form-grid">
+          <label>Destinatario<input name="recipient_name" autocomplete="name" required /></label>
+          <label>Telefono<input name="contact_phone" autocomplete="tel" /></label>
+          <label>Correo electronico<input name="contact_email" type="email" autocomplete="email" /></label>
+          <label>Pais<input name="country_code" value="MX" minlength="2" maxlength="2" required /></label>
+          <label class="wide">Calle y numero<input name="line_1" autocomplete="address-line1" required /></label>
+          <label class="wide">Interior o referencia<input name="line_2" autocomplete="address-line2" /></label>
+          <label>Colonia<input name="neighborhood" /></label>
+          <label>Ciudad<input name="city" autocomplete="address-level2" required /></label>
+          <label>Estado o region<input name="region" autocomplete="address-level1" required /></label>
+          <label>Codigo postal<input name="postal_code" autocomplete="postal-code" required /></label>
+          <label class="wide">Instrucciones permitidas para la entrega<textarea name="delivery_instructions"></textarea></label>
+        </div>
+      </section>
+      <aside class="panel cart-summary">
+        <h2>Tu Pedido</h2>
+        <div data-checkout-lines></div>
+        <div class="summary-row total"><span>Total</span><strong data-checkout-total>$0.00</strong></div>
+        <p class="summary-note">El servidor obtiene los precios actuales y crea todos los snapshots en una unica transaccion. El Pedido no descuenta ni reserva inventario.</p>
+        <button class="button primary" type="submit">Crear Pedido</button>
+      </aside>
+    </form>
+    <div class="notice error" data-checkout-error hidden></div>
+    <div class="confirmation panel" data-checkout-confirmation hidden></div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/checkout-page';
+</script>

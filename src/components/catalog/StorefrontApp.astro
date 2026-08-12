@@ -1,0 +1,88 @@
+---
+interface Props {
+  mode: 'home' | 'products' | 'product-detail' | 'packages' | 'package-detail' | 'cart';
+}
+
+const { mode } = Astro.props;
+const headings = {
+  products: ['Productos', 'Elige una Presentacion vendible; cada variante conserva su propio precio, SKU y disponibilidad.'],
+  packages: ['Paquetes', 'Combinaciones preparadas cuya disponibilidad se calcula desde sus componentes.'],
+  cart: ['Tu carrito', 'Revisamos precios y disponibilidad antes de crear el Pedido.'],
+};
+---
+
+<div data-storefront-app data-mode={mode}>
+  {mode === 'home' && (
+    <>
+      <section class="home-hero">
+        <div class="home-hero-content">
+          <h1>Cherry Mary</h1>
+          <p>Productos y paquetes preparados con atencion al detalle. Explora el catalogo vigente y arma tu pedido.</p>
+          <div class="button-row">
+            <a class="button primary" href="/productos">Ver Productos</a>
+            <a class="button secondary" href="/paquetes">Explorar Paquetes</a>
+          </div>
+        </div>
+      </section>
+      <section class="page-band white">
+        <div class="page-inner">
+          <div class="page-heading">
+            <div><h2>Seleccion actual</h2><p>Articulos vigentes consultados directamente desde el catalogo.</p></div>
+          </div>
+          <div class="catalog-grid" data-home-featured></div>
+        </div>
+      </section>
+    </>
+  )}
+
+  {(mode === 'products' || mode === 'packages') && (
+    <section class="page-band">
+      <div class="page-inner">
+        <div class="page-heading">
+          <div><h1>{headings[mode][0]}</h1><p>{headings[mode][1]}</p></div>
+        </div>
+        <div class="catalog-toolbar">
+          <label>Buscar<input type="search" placeholder="Nombre o descripcion" data-catalog-search /></label>
+          <label>Clasificacion<select data-classification-filter><option value="">Todas</option></select></label>
+        </div>
+        <div class="catalog-grid" data-catalog-list></div>
+      </div>
+    </section>
+  )}
+
+  {(mode === 'product-detail' || mode === 'package-detail') && (
+    <section class="page-band white">
+      <div class="page-inner" data-detail-content>
+        <div class="state-box"><div><strong>Cargando detalle</strong>Consultando el catalogo vigente.</div></div>
+      </div>
+    </section>
+  )}
+
+  {mode === 'cart' && (
+    <section class="page-band">
+      <div class="page-inner">
+        <div class="page-heading">
+          <div><h1>{headings.cart[0]}</h1><p>{headings.cart[1]}</p></div>
+        </div>
+        <div class="cart-layout">
+          <section class="panel" data-cart-lines>
+            <div class="state-box"><div><strong>Cargando carrito</strong>Revalidando articulos.</div></div>
+          </section>
+          <aside class="panel cart-summary">
+            <h2>Resumen</h2>
+            <div class="summary-row"><span>Subtotal provisional</span><strong data-cart-total>$0.00</strong></div>
+            <div class="summary-row total"><span>Total provisional</span><strong data-cart-total>$0.00</strong></div>
+            <p class="summary-note">Los precios se confirman en el servidor al crear el Pedido. No es una reserva de inventario.</p>
+            <a class="button primary" href="/checkout" data-checkout-link>Continuar al checkout</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <div class="shell-notice" data-page-notice hidden role="status"></div>
+</div>
+
+<script>
+  import '../../scripts/storefront';
+</script>
