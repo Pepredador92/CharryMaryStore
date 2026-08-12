@@ -1,0 +1,62 @@
+---
+import '../styles/admin.css';
+
+interface Props {
+  title: string;
+  section: 'dashboard' | 'products' | 'packages' | 'inventory' | 'classifications';
+}
+
+const { title, section } = Astro.props;
+const navItems = [
+  { id: 'dashboard', label: 'Resumen', href: '/admin' },
+  { id: 'products', label: 'Productos', href: '/admin/productos' },
+  { id: 'packages', label: 'Paquetes', href: '/admin/paquetes' },
+  { id: 'inventory', label: 'Inventario', href: '/admin/inventario' },
+  { id: 'classifications', label: 'Clasificaciones', href: '/admin/clasificaciones' },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="Administración operativa del catálogo Cherry Mary" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} | Cherry Mary</title>
+  </head>
+  <body>
+    <div class="admin-frame">
+      <aside class="admin-sidebar">
+        <a class="admin-brand" href="/admin">
+          <strong>Cherry Mary</strong>
+          <span>Administración</span>
+        </a>
+        <nav class="admin-nav" aria-label="Administración del catálogo">
+          {
+            navItems.map((item) => (
+              <a href={item.href} aria-current={item.id === section ? 'page' : undefined}>
+                {item.label}
+              </a>
+            ))
+          }
+        </nav>
+        <div class="admin-sidebar-foot">Catálogo comercial e inventario</div>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <p>Operación protegida por capabilities y RLS</p>
+          <div class="admin-session">
+            <span class="admin-session-email" data-session-email>Sesión no iniciada</span>
+            <button class="button quiet small" type="button" data-sign-out hidden>Cerrar sesión</button>
+          </div>
+        </header>
+        <div class="admin-content">
+          <slot />
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

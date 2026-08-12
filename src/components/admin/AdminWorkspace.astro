@@ -1,0 +1,281 @@
+---
+interface Props {
+  section: 'dashboard' | 'products' | 'packages' | 'inventory' | 'classifications';
+  title: string;
+  description: string;
+}
+
+const { section, title, description } = Astro.props;
+const createLabels = {
+  products: 'Nuevo producto',
+  packages: 'Nuevo paquete',
+  classifications: 'Nueva clasificación',
+};
+---
+
+<div data-admin-workspace data-section={section}>
+  <section class="auth-panel" data-auth-panel hidden>
+    <h1>Acceso operativo</h1>
+    <p>Inicia sesión con una Cuenta operativa activa para administrar el catálogo.</p>
+    <form data-auth-form>
+      <label>
+        Correo electrónico
+        <input name="email" type="email" autocomplete="username" required />
+      </label>
+      <label>
+        Contraseña
+        <input name="password" type="password" autocomplete="current-password" required />
+      </label>
+      <div class="notice error" data-auth-error hidden></div>
+      <button class="button primary" type="submit">Iniciar sesión</button>
+    </form>
+  </section>
+
+  <section class="state-box panel" data-loading-state>
+    <div><strong>Cargando acceso</strong>Consultando la sesión y las capabilities disponibles.</div>
+  </section>
+
+  <section class="state-box panel" data-access-state hidden>
+    <div>
+      <strong>Acceso operativo insuficiente</strong>
+      La sesión no tiene las capabilities necesarias para esta sección.
+    </div>
+  </section>
+
+  <div data-workspace-content hidden>
+    <header class="page-heading">
+      <div>
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </div>
+      {
+        section in createLabels && (
+          <button class="button primary" type="button" data-create-action>
+            {createLabels[section as keyof typeof createLabels]}
+          </button>
+        )
+      }
+    </header>
+
+    {
+      section === 'dashboard' && (
+        <>
+          <section class="stats-grid" data-dashboard-stats></section>
+          <div class="two-column">
+            <section class="panel">
+              <div class="panel-head">
+                <div><h2>Estado del catálogo</h2><p>Actividad y cobertura de la oferta comercial.</p></div>
+              </div>
+              <div class="panel-body" data-dashboard-summary></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <div><h2>Inventario bajo</h2><p>Presentaciones con cinco unidades o menos.</p></div>
+              </div>
+              <div class="panel-body" data-low-stock></div>
+            </section>
+          </div>
+        </>
+      )
+    }
+
+    {
+      section === 'products' && (
+        <>
+          <section class="panel">
+            <div class="filter-bar">
+              <input class="search-input" type="search" placeholder="Buscar por nombre, SKU o variante" data-product-search />
+              <button class="button" type="button" data-create-presentation>Nueva presentación</button>
+            </div>
+            <div class="table-wrap" data-products-table></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <div><h2>Presentaciones vendibles</h2><p>SKU, variante, precio y moneda pertenecen a la Presentación.</p></div>
+            </div>
+            <div class="table-wrap" data-presentations-table></div>
+          </section>
+        </>
+      )
+    }
+
+    {
+      section === 'packages' && (
+        <section class="panel">
+          <div class="filter-bar">
+            <input class="search-input" type="search" placeholder="Buscar paquete" data-package-search />
+          </div>
+          <div class="table-wrap" data-packages-table></div>
+        </section>
+      )
+    }
+
+    {
+      section === 'inventory' && (
+        <>
+          <section class="panel">
+            <div class="filter-bar">
+              <input class="search-input" type="search" placeholder="Buscar presentación o SKU" data-inventory-search />
+            </div>
+            <div class="table-wrap" data-inventory-table></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <div><h2>Historial de movimientos</h2><p>Registro append-only; no admite edición ni eliminación.</p></div>
+            </div>
+            <div class="table-wrap" data-movements-table></div>
+          </section>
+        </>
+      )
+    }
+
+    {
+      section === 'classifications' && (
+        <div class="two-column">
+          <section class="panel">
+            <div class="panel-head">
+              <div><h2>Jerarquía comercial</h2><p>Clasificaciones activas e inactivas.</p></div>
+            </div>
+            <div class="table-wrap" data-classifications-table></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <div><h2>Asignaciones</h2><p>Asocia una clasificación a un Producto o Paquete.</p></div>
+            </div>
+            <div class="panel-body">
+              <form class="form-grid" data-assignment-form>
+                <label class="wide">Clasificación<select name="classification_id" required></select></label>
+                <label>Destino<select name="target_type"><option value="product">Producto</option><option value="package">Paquete</option></select></label>
+                <label>Elemento<select name="target_id" required></select></label>
+                <div class="form-actions wide"><button class="button primary" type="submit">Asignar</button></div>
+              </form>
+              <div class="component-list" data-assignments-list></div>
+            </div>
+          </section>
+        </div>
+      )
+    }
+  </div>
+
+  <div class="notice toast" data-toast hidden></div>
+
+  <dialog data-product-dialog>
+    <div class="dialog-head"><h2 data-product-dialog-title>Producto</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
+    <div class="dialog-body">
+      <form data-product-form>
+        <input name="id" type="hidden" />
+        <div class="form-grid">
+          <label class="wide">Nombre<input name="name" required maxlength="160" /></label>
+          <label class="wide">Descripción<textarea name="description"></textarea></label>
+          <label class="wide">Instrucciones de uso<textarea name="usage_instructions"></textarea></label>
+          <label class="wide">Advertencias<textarea name="warnings"></textarea></label>
+          <label class="check-field"><input name="is_active" type="checkbox" checked /> Activo</label>
+        </div>
+        <div class="form-actions"><button class="button" type="button" data-close-dialog>Cancelar</button><button class="button primary" type="submit">Guardar producto</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog data-presentation-dialog>
+    <div class="dialog-head"><h2 data-presentation-dialog-title>Presentación</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
+    <div class="dialog-body">
+      <form data-presentation-form>
+        <input name="id" type="hidden" />
+        <div class="form-grid">
+          <label class="wide">Producto<select name="product_id" required></select></label>
+          <label>SKU<input name="sku" required maxlength="100" /></label>
+          <label>Variante<input name="variant_label" maxlength="160" /></label>
+          <label>Precio vigente<input name="price" type="number" min="0" step="0.01" required /></label>
+          <label>Moneda<input name="currency_code" value="MXN" minlength="3" maxlength="3" required /></label>
+          <label class="wide">Atributos JSON<textarea name="attributes" placeholder='{"tamaño":"mediano"}'></textarea></label>
+          <label class="check-field"><input name="is_active" type="checkbox" checked /> Activa</label>
+        </div>
+        <div class="form-actions"><button class="button" type="button" data-close-dialog>Cancelar</button><button class="button primary" type="submit">Guardar presentación</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="wide-dialog" data-package-dialog>
+    <div class="dialog-head"><h2 data-package-dialog-title>Paquete</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
+    <div class="dialog-body">
+      <form data-package-form>
+        <input name="id" type="hidden" />
+        <div class="form-grid">
+          <label class="wide">Nombre<input name="name" required maxlength="160" /></label>
+          <label class="wide">Descripción<textarea name="description"></textarea></label>
+          <label>Precio vigente<input name="price" type="number" min="0" step="0.01" required /></label>
+          <label>Moneda<input name="currency_code" value="MXN" minlength="3" maxlength="3" required /></label>
+          <label>Vigente desde<input name="valid_from" type="datetime-local" /></label>
+          <label>Vigente hasta<input name="valid_until" type="datetime-local" /></label>
+          <label class="check-field"><input name="is_active" type="checkbox" checked /> Activo</label>
+        </div>
+        <div class="form-actions"><button class="button" type="button" data-close-dialog>Cancelar</button><button class="button primary" type="submit">Guardar paquete</button></div>
+      </form>
+
+      <section data-package-components-section hidden>
+        <div class="panel-head"><div><h2>Componentes</h2><p>La disponibilidad se calcula con las existencias de estas Presentaciones.</p></div></div>
+        <div class="component-list" data-package-components-list></div>
+        <form class="form-grid" data-component-form>
+          <input name="package_id" type="hidden" />
+          <input name="id" type="hidden" />
+          <label>Presentación<select name="presentation_id" required></select></label>
+          <label>Cantidad<input name="quantity" type="number" min="1" step="1" required /></label>
+          <label class="check-field"><input name="is_active" type="checkbox" checked /> Activo</label>
+          <div class="form-actions"><button class="button primary" type="submit">Agregar componente</button></div>
+        </form>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog data-classification-dialog>
+    <div class="dialog-head"><h2 data-classification-dialog-title>Clasificación</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
+    <div class="dialog-body">
+      <form data-classification-form>
+        <input name="id" type="hidden" />
+        <div class="form-grid">
+          <label class="wide">Nombre<input name="name" required maxlength="160" /></label>
+          <label class="wide">Descripción<textarea name="description"></textarea></label>
+          <label class="wide">Clasificación superior<select name="parent_id"><option value="">Sin clasificación superior</option></select></label>
+          <label class="check-field"><input name="is_active" type="checkbox" checked /> Activa</label>
+        </div>
+        <div class="form-actions"><button class="button" type="button" data-close-dialog>Cancelar</button><button class="button primary" type="submit">Guardar clasificación</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog data-inventory-dialog>
+    <div class="dialog-head"><h2>Registrar movimiento</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
+    <div class="dialog-body">
+      <form data-inventory-form>
+        <input name="presentation_id" type="hidden" />
+        <div class="notice" data-inventory-presentation></div>
+        <div class="form-grid">
+          <label>Tipo<select name="movement_kind"><option value="stock_entry">Entrada de stock</option><option value="manual_adjustment">Ajuste manual</option></select></label>
+          <label>Cantidad<input name="quantity_delta" type="number" step="1" required /></label>
+          <label class="wide">Causa<textarea name="cause" required></textarea></label>
+        </div>
+        <div class="form-actions"><button class="button" type="button" data-close-dialog>Cancelar</button><button class="button primary" type="submit">Registrar movimiento</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="wide-dialog" data-resource-dialog>
+    <div class="dialog-head"><h2 data-resource-dialog-title>Imágenes</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
+    <div class="dialog-body">
+      <form class="form-grid" data-resource-form>
+        <input name="owner_type" type="hidden" />
+        <input name="owner_id" type="hidden" />
+        <label class="wide">Imagen<input name="file" type="file" accept="image/jpeg,image/png,image/webp,image/avif" required /></label>
+        <label>Texto alternativo<input name="alt_text" maxlength="240" /></label>
+        <label>Orden<input name="sort_order" type="number" min="0" step="1" value="0" required /></label>
+        <div class="form-actions wide"><button class="button primary" type="submit">Subir imagen</button></div>
+      </form>
+      <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-resource-replacement hidden />
+      <div class="resource-grid" data-resources-list></div>
+    </div>
+  </dialog>
+</div>
+
+<script>
+  import '../../scripts/admin-workspace';
+</script>
