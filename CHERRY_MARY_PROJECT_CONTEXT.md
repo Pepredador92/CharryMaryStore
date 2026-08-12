@@ -469,9 +469,9 @@ Si el usuario indica que otra conversación está trabajando, debe esperarse el 
 
 ## 13. Estado arquitectónico actual
 
-Módulo actual:
+Módulo más recientemente implementado:
 
-`CM-M03.3 — Diseño de seguridad, RLS y auditoría transversal`
+`CM-M03.4 — Seed inicial`
 
 Estado general:
 
@@ -482,10 +482,10 @@ Estado general:
 - `CM-ADR-007 — Adenda 01 — Conservación de evidencia logística`: **aprobada**.
 - `CM-M03.2 — Migraciones iniciales`: **implementado, aplicado y validado remotamente**.
 - Fase de inspección técnica de `CM-M03.2`: **completada, validada y cerrada documentalmente**.
-- `CM-M03.3 — RLS y auditoría transversal`: **iniciado y en implementación**.
+- `CM-M03.3 — RLS y auditoría transversal`: **implementado y validado remotamente**.
 - `CM-M03.3-S01 — Fundación de autorización y auditoría transversal`: **implementada, aplicada remotamente y validada**.
-- `CM-M03.3-S02 — Policies RLS`: **pendiente / no implementada**.
-- `CM-M03.4 — Seed inicial`: **no iniciado**.
+- `CM-M03.3-S02 — Policies RLS`: **implementada, aplicada remotamente y validada**.
+- `CM-M03.4 — Seed inicial`: **implementado y validado remotamente**.
 
 El cierre conceptual de `CM-M03.1` permanece vigente. Las decisiones físicas y migraciones aprobadas posteriormente dentro de `CM-M03.2` no reabren ni modifican las decisiones de dominio ya cerradas.
 
@@ -1126,7 +1126,7 @@ Después de la aplicación remota de `M01` a `M12`, `CM-M03.2` creó 35 tablas p
 
 > Objetos remotos preexistentes aceptados como condición técnica para la aplicación controlada de `M01` a `M12`.
 
-Después de la aplicación remota de `M01` a `M12` y de `CM-M03.3-S01`, estos objetos permanecen intactos. Cherry Mary no los adoptó como objetos propios, no los modificó y no los endureció.
+Después de la aplicación remota de `M01` a `M12`, `CM-M03.3-S01`, `CM-M03.3-S02` y el seed de `CM-M03.4`, estos objetos permanecen intactos. Cherry Mary no los adoptó como objetos propios, no los modificó y no los endureció.
 
 Estado verificado:
 
@@ -1192,7 +1192,7 @@ Esta situación:
 
 #### Estado de CM-M03.3 — Seguridad, RLS y auditoría transversal
 
-`CM-M03.3 — Diseño de seguridad, RLS y auditoría transversal` está **iniciado y en implementación**.
+`CM-M03.3 — Diseño de seguridad, RLS y auditoría transversal` está **implementado y validado remotamente**.
 
 `CM-M03.3-S01 — Fundación de autorización y auditoría transversal` está **implementada, aplicada remotamente y validada**.
 
@@ -1227,23 +1227,69 @@ Los helpers de S01:
 - Conceden `EXECUTE` a `authenticated`.
 - No conceden `EXECUTE` a `anon`.
 
-`CM-M03.3-S02 — Policies RLS` está **pendiente / no implementada**.
+`CM-M03.3-S02 — Policies RLS` está **implementada, aplicada remotamente y validada**.
 
-S02 será el próximo paso únicamente después de:
+Archivo:
 
-- Commit y push de S01.
-- Esta sincronización documental.
-- Revisión de la guía.
+`supabase/migrations/20260811201717_rls_policies.sql`
 
-#### Módulos todavía no iniciados o diferidos
+Estado remoto validado después de S02:
 
-- `CM-M03.3-S02 — Policies RLS`: pendiente / no implementada.
-- `CM-M03.4 — Seed inicial`: no iniciado.
-- Seed inicial: no iniciado.
+- S02 creó 49 policies RLS.
+- Hay 36 tablas en `public`.
+- 36/36 tablas de `public` tienen RLS habilitado.
+- Las policies utilizan los helpers operativos de S01 sin modificar su definición ni sus permisos.
+- `delivery_evidence_items`, `support_requests` y `support_messages` permanecen sin policies por su clasificación server-only.
+
+#### Estado de CM-M03.4 — Seed inicial
+
+`CM-M03.4 — Seed inicial` está **implementado y validado remotamente**.
+
+Archivo:
+
+`supabase/seed.sql`
+
+El seed contiene únicamente 19 Capacidades estructurales:
+
+- `catalog.read`
+- `catalog.manage`
+- `inventory.read`
+- `inventory.adjust`
+- `access.read`
+- `access.manage`
+- `orders.read`
+- `orders.manage`
+- `preparation.read`
+- `preparation.operate`
+- `preparation.manage`
+- `delivery.read`
+- `delivery.operate`
+- `delivery.manage`
+- `audit.read`
+- `delivery_evidence.read`
+- `delivery_evidence.manage`
+- `support.handle`
+- `support.sensitive`
+
+Cada Capacidad utiliza un UUID fijo, `description` nulo e `is_active` verdadero en la instalación inicial. La identidad lógica es `capabilities.code`; el seed usa `ON CONFLICT (code) DO NOTHING`, no borra registros, no modifica asignaciones y no reactiva Capacidades desactivadas posteriormente.
+
+La aplicación remota y una segunda ejecución de comprobación terminaron correctamente. El resultado final fue de 19 Capacidades, una fila por código, con los 19 códigos iniciales activos.
+
+La ausencia de los siguientes datos es intencional:
+
+- Usuarios de Supabase Auth.
+- Personas operativas, Cuentas operativas y asignaciones de Capacidades.
+- Productos, Presentaciones vendibles, Paquetes, clasificaciones e inventario.
+- Clientes, Cuentas personales y direcciones.
+- Carritos, Pedidos, Preparaciones y Entregas.
+- Solicitudes de atención, eventos de auditoría y evidencia.
+- Datos comerciales ficticios y fixtures de prueba.
+
+El seed es DML y no se registró como migración estructural.
 
 La auditoría transversal ya fue materializada por `CM-M03.3-S01` en `public.audit_events`. No debe reclasificarse como `CM-M03.2`.
 
-La existencia de `M01` a `M12` y de `S01` no autoriza automáticamente RLS policies, seed, Storage, funciones adicionales, triggers adicionales, código de aplicación ni cambios de infraestructura.
+La implementación de `M01` a `M12`, S01, S02 y el seed inicial no autoriza automáticamente Storage, funciones adicionales, triggers adicionales, código de aplicación ni cambios de infraestructura.
 
 ---
 
@@ -1370,26 +1416,26 @@ Decisiones y hallazgos vigentes:
 - Drift entre timestamps locales y versiones remotas: **existente y pendiente de reconciliación futura**.
 - `M13 — transversal_audit`: **materializada en `CM-M03.3-S01` como `public.audit_events`**.
 - `public.audit_events`: **existe como parte de `CM-M03.3-S01`, no de `CM-M03.2`**.
-- `CM-M03.3 — RLS y auditoría transversal`: **iniciado y en implementación**.
+- `CM-M03.3 — RLS y auditoría transversal`: **implementado y validado remotamente**.
 - `CM-M03.3-S01 — Fundación de autorización y auditoría transversal`: **implementada, aplicada remotamente y validada**.
-- `CM-M03.3-S02 — Policies RLS`: **pendiente / no implementada**.
-- `CM-M03.4 — Seed inicial`: **no iniciado**.
+- `CM-M03.3-S02 — Policies RLS`: **implementada, aplicada remotamente y validada; 49 policies sobre una base de 36 tablas con RLS habilitado en 36/36**.
+- `CM-M03.4 — Seed inicial`: **implementado y validado remotamente; 19 Capacidades estructurales en `supabase/seed.sql`**.
 
 ### Decisiones y trabajos todavía diferidos
 
 Permanecen diferidos o requieren autorización posterior:
 
 - Reconciliación futura del drift entre timestamps locales y versiones remotas de `M01` a `M12`.
-- `CM-M03.3-S02 — Policies RLS`.
-- Matriz técnica de acceso de `CM-M03.3`.
-- Seed de `CM-M03.4`.
+- Hardening de `public.rls_auto_enable` y `ensure_rls` mediante un procedimiento expresamente aprobado.
+- Datos comerciales reales.
+- Bootstrap del Administrador.
+- Implementación funcional de la aplicación.
 - Configuración y raíz de despliegue de Vercel.
 - Normalización del repositorio exterior.
 - Buckets, Storage, APIs, webhooks, funciones Edge e integraciones.
 - Proveedor logístico concreto, máximo de intentos y reglas específicas de Entrega.
 - Pagos, pagos fallidos, reintentos financieros, reembolsos, compensaciones comerciales, devoluciones y logística inversa completa.
 - Recuperación de Pedidos de invitados.
-- Matriz definitiva de Capacidades y políticas de acceso.
 - Automatizaciones técnicas de conservación y eliminación.
 
 Ninguna decisión diferida puede resolverse implícitamente durante la programación.
@@ -1398,22 +1444,18 @@ Ninguna decisión diferida puede resolverse implícitamente durante la programac
 
 ## 15. Próximo paso autorizado
 
-El único próximo paso autorizado es:
+No existe una ejecución posterior autorizada automáticamente después de `CM-M03.4`.
 
-> Ninguna ejecución nueva está autorizada automáticamente. `CM-M03.3-S02 — Policies RLS` permanece pendiente / no implementada.
+Permanecen pendientes, entre otros trabajos expresamente diferidos:
 
-`CM-M03.3-S02` podrá retomarse únicamente después de:
+- Hardening de `public.rls_auto_enable` y `ensure_rls`.
+- Reconciliación del drift entre timestamps locales y versiones remotas.
+- Datos comerciales reales.
+- Bootstrap del Administrador.
+- Implementación funcional de la aplicación.
 
-1. Commit y push de `CM-M03.3-S01`.
-2. Esta sincronización documental.
-3. Revisión de la guía.
+Hasta recibir una autorización posterior específica:
 
-Hasta que esas condiciones se cumplan:
-
-- No debe iniciarse `CM-M03.3-S02`.
-- No debe iniciarse `CM-M03.4 — Seed inicial`.
-- No deben crearse RLS policies.
-- No debe crearse seed.
 - No deben reaplicarse `M01` a `M12`.
 - No debe ejecutarse `supabase db push` a ciegas.
 - No debe reconciliarse el drift sin autorización explícita.
