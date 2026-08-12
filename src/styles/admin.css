@@ -427,6 +427,13 @@ label {
   font-weight: 700;
 }
 
+.field-hint {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
 input,
 select,
 textarea {

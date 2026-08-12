@@ -1,6 +1,22 @@
 import { supabase } from '../supabase/client';
 
 export const CATALOG_BUCKET = 'catalog-resources';
+export const CATALOG_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+
+const CATALOG_IMAGE_EXTENSIONS: Record<string, string> = {
+  'image/avif': 'avif',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+const CATALOG_IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
+  avif: 'image/avif',
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+};
 
 export type Product = {
   id: string;
@@ -114,6 +130,29 @@ export type CatalogSnapshot = {
 };
 
 type QueryResult<T> = { data: T | null; error: { message: string } | null };
+
+function catalogImageMetadata(file: File): { contentType: string; extension: string } {
+  if (!file.size) {
+    throw new Error('La imagen seleccionada está vacía.');
+  }
+  if (file.size > CATALOG_IMAGE_MAX_BYTES) {
+    throw new Error('La imagen supera el límite de 10 MB.');
+  }
+
+  const fileExtension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  const declaredType = file.type.toLowerCase();
+  const contentType = !declaredType || declaredType === 'application/octet-stream'
+    ? CATALOG_IMAGE_MIME_BY_EXTENSION[fileExtension]
+    : CATALOG_IMAGE_EXTENSIONS[declaredType]
+      ? declaredType
+      : '';
+
+  if (!contentType) {
+    throw new Error('Formato no compatible. Usa una imagen JPG, PNG, WebP o AVIF.');
+  }
+
+  return { contentType, extension: CATALOG_IMAGE_EXTENSIONS[contentType] };
+}
 
 function requireData<T>(result: QueryResult<T>, context: string): T {
   if (result.error) {
@@ -321,11 +360,11 @@ export async function uploadCatalogResource(input: {
   altText: string;
   sortOrder: number;
 }): Promise<void> {
-  const extension = input.file.name.split('.').pop()?.toLowerCase() || 'bin';
-  const safeExtension = extension.replace(/[^a-z0-9]/g, '') || 'bin';
-  const path = `${input.ownerType}/${input.ownerId}/${crypto.randomUUID()}.${safeExtension}`;
+  const { contentType, extension } = catalogImageMetadata(input.file);
+  const path = `${input.ownerType}/${input.ownerId}/${crypto.randomUUID()}.${extension}`;
   const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, input.file, {
     cacheControl: '3600',
+    contentType,
     upsert: false,
   });
   if (upload.error) {
@@ -371,16 +410,16 @@ export async function setPrimaryCatalogResource(id: string): Promise<void> {
 }
 
 export async function replaceCatalogResource(resource: CatalogResource, file: File): Promise<void> {
-  const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
-  const safeExtension = extension.replace(/[^a-z0-9]/g, '') || 'bin';
+  const { contentType, extension } = catalogImageMetadata(file);
   const owner = resource.product_id
     ? `product/${resource.product_id}`
     : resource.presentation_id
       ? `presentation/${resource.presentation_id}`
       : `package/${resource.package_id}`;
-  const path = `${owner}/${crypto.randomUUID()}.${safeExtension}`;
+  const path = `${owner}/${crypto.randomUUID()}.${extension}`;
   const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, file, {
     cacheControl: '3600',
+    contentType,
     upsert: false,
   });
   if (upload.error) {
