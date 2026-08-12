@@ -33,7 +33,11 @@ const path = Astro.url.pathname;
         <nav class="store-nav" aria-label="Navegacion principal">
           <a class:list={{ active: path.startsWith('/productos') }} href="/productos">Productos</a>
           <a class:list={{ active: path.startsWith('/paquetes') }} href="/paquetes">Paquetes</a>
-          <a class:list={{ active: path === '/ayuda' }} href="/ayuda">Ayuda</a>
+          <a class:list={{ 'store-chat-link': true, active: path === '/ayuda' }} href="/ayuda" data-support-link title="Hablar con Mary" aria-label="Hablar con Mary">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/></svg>
+            <span class="support-count" data-support-count hidden>0</span>
+            <span class="sr-only">Hablar con Mary</span>
+          </a>
           <a class:list={{ active: path.startsWith('/cuenta') || path === '/acceso' }} href="/cuenta" data-account-link>Cuenta</a>
           <a class:list={{ active: path === '/carrito' }} href="/carrito">Carrito <span class="cart-count" data-cart-count>0</span></a>
           <a href="/admin" data-admin-link hidden>Administracion</a>

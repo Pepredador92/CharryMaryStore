@@ -96,6 +96,10 @@ class OperationsWorkspace {
     this.optional<HTMLFormElement>('[data-auth-form]')?.addEventListener('submit', (event) => void this.signIn(event));
     document.querySelector<HTMLButtonElement>('[data-sign-out]')?.addEventListener('click', () => void this.signOut());
     this.root.addEventListener('click', (event) => void this.click(event));
+    this.root.addEventListener('submit', (event) => {
+      const form = event.target as HTMLFormElement;
+      if (form.matches('[data-admin-support-reply]')) void this.submitSupportReply(event);
+    });
     this.optional<HTMLInputElement>('[data-search]')?.addEventListener('input', () => this.render());
     this.optional<HTMLSelectElement>('[data-status-filter]')?.addEventListener('change', () => this.render());
     this.optional<HTMLInputElement>('[data-date-from]')?.addEventListener('change', () => this.render());
@@ -335,8 +339,15 @@ class OperationsWorkspace {
   private renderSupportDetail(): void {
     const request = this.data.request;
     const messages = this.data.messages as JsonRecord[];
-    this.content().innerHTML = `<div class="panel-body detail-stack"><div class="detail-grid"><div><span>Asunto</span><strong>${escapeHtml(request.subject)}</strong></div><div><span>Estado</span>${badge(request.status)}</div><div><span>Contacto</span><strong>${escapeHtml(request.contact_email ?? request.contact_phone ?? request.pseudonymous_reference ?? '—')}</strong></div><div><span>Apertura</span><strong>${formatDate(request.opened_at)}</strong></div></div><section><h2>Conversación</h2><div class="message-list">${messages.map((message) => `<article class="support-message ${message.direction}"><header><strong>${message.direction === 'incoming' ? 'Solicitante' : 'Cherry Mary'}</strong><span>${formatDate(message.sent_at)}${message.is_sensitive ? ' · Sensible' : ''}</span></header><p>${escapeHtml(message.body)}</p></article>`).join('')}</div></section></div>`;
-    this.actions().innerHTML = `<a class="button" href="/admin/atencion">Volver</a>${request.status !== 'closed' && this.can('support.handle') ? '<button class="button primary" data-action="respond-support">Responder</button><button class="button" data-action="support-status">Cambiar estado</button>' : ''}`;
+    const composer = request.status !== 'closed' && this.can('support.handle')
+      ? `<form class="admin-support-composer" data-admin-support-reply><textarea name="body" required maxlength="4000" aria-label="Respuesta" placeholder="Escribe una respuesta como Mary..."></textarea><button class="button primary" type="submit">Enviar</button>${this.can('support.sensitive') ? '<label class="check-field"><input type="checkbox" name="sensitive"> Contenido sensible</label>' : ''}</form>`
+      : '<div class="notice">La conversación está cerrada.</div>';
+    this.content().innerHTML = `<div class="panel-body detail-stack"><div class="detail-grid"><div><span>Asunto</span><strong>${escapeHtml(request.subject)}</strong></div><div><span>Estado</span>${badge(request.status)}</div><div><span>Contacto</span><strong>${escapeHtml(request.contact_email ?? request.contact_phone ?? request.pseudonymous_reference ?? '—')}</strong></div><div><span>Apertura</span><strong>${formatDate(request.opened_at)}</strong></div></div><section class="admin-support-chat"><h2>Conversación con el cliente</h2><div class="message-list" data-admin-message-list>${messages.map((message) => `<article class="support-message ${message.direction}"><header><strong>${message.direction === 'incoming' ? 'Cliente' : 'Mary'}</strong><span>${formatDate(message.sent_at)}${message.is_sensitive ? ' · Sensible' : ''}</span></header><p>${escapeHtml(message.body)}</p></article>`).join('')}</div>${composer}</section></div>`;
+    this.actions().innerHTML = `<a class="button" href="/admin/atencion">Volver</a>${request.status !== 'closed' && this.can('support.handle') ? '<button class="button" data-action="support-status">Cambiar estado</button>' : ''}`;
+    requestAnimationFrame(() => {
+      const list = this.optional<HTMLElement>('[data-admin-message-list]');
+      if (list) list.scrollTop = list.scrollHeight;
+    });
   }
 
   private renderAudit(): void {
@@ -376,7 +387,6 @@ class OperationsWorkspace {
       if (action === 'delivery-attempt') this.openAttempt();
       if (action === 'new-evidence') this.openEvidence();
       if (action === 'delete-evidence' && id) this.openCause('Eliminar evidencia lógicamente', (cause) => deleteDeliveryEvidence(id, cause));
-      if (action === 'respond-support') this.openResponse();
       if (action === 'support-status') this.openSupportStatus();
     } catch (error) {
       this.toast(this.message(error), 'error');
@@ -440,10 +450,20 @@ class OperationsWorkspace {
     });
   }
 
-  private openResponse(): void {
-    this.openDialog('Responder solicitud', `<label class="wide">Respuesta<textarea name="body" required maxlength="4000"></textarea></label>${this.can('support.sensitive') ? '<label class="check-field wide"><input type="checkbox" name="sensitive"> Contenido sensible</label>' : ''}`, async (data) => {
-      await respondSupport(this.queryId(), String(data.get('body')), data.get('sensitive') === 'on');
-    });
+  private async submitSupportReply(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const data = new FormData(form);
+    this.busy(form, true);
+    try {
+      await respondSupport(this.queryId(), String(data.get('body') ?? '').trim(), data.get('sensitive') === 'on');
+      await this.reload();
+      this.toast('Respuesta enviada como Mary.', 'success');
+    } catch (error) {
+      this.toast(this.message(error), 'error');
+    } finally {
+      this.busy(form, false);
+    }
   }
 
   private openSupportStatus(): void {
