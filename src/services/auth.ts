@@ -22,6 +22,12 @@ export async function currentSession(): Promise<Session | null> {
   return data.session;
 }
 
+export function preferredNameForUser(user: User): string {
+  const metadata = user.user_metadata as Record<string, unknown>;
+  const candidate = metadata.preferred_name ?? metadata.full_name ?? metadata.name;
+  return typeof candidate === 'string' ? candidate.trim() : '';
+}
+
 export async function registerWithPassword(
   email: string,
   password: string,
@@ -40,8 +46,28 @@ export async function registerWithPassword(
 export async function loginWithPassword(email: string, password: string): Promise<Session> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.session) throw error ?? new Error('No se pudo iniciar sesion.');
-  await ensurePersonalContext((data.user.user_metadata?.preferred_name as string | undefined) ?? '');
+  await ensurePersonalContext(preferredNameForUser(data.user));
   return data.session;
+}
+
+export async function loginWithGoogle(redirectTo: string): Promise<void> {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+  });
+  if (error) throw error;
+}
+
+export async function googleLoginAvailable(): Promise<boolean> {
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const response = await fetch(`${supabaseUrl}/auth/v1/settings`, {
+    headers: { apikey: supabaseKey },
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error('No se pudo consultar la disponibilidad de Google.');
+  const settings = (await response.json()) as { external?: { google?: boolean } };
+  return settings.external?.google === true;
 }
 
 export async function logout(): Promise<void> {

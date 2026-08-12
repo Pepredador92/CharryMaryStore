@@ -1,4 +1,11 @@
-import { currentSession, ensurePersonalContext, logout, onSessionChange, operationalCapabilities } from '../services/auth';
+import {
+  currentSession,
+  ensurePersonalContext,
+  logout,
+  onSessionChange,
+  operationalCapabilities,
+  preferredNameForUser,
+} from '../services/auth';
 import { loadRemoteCart, mergeGuestCart } from '../services/cart';
 import { guestCartCount, subscribeGuestCart } from '../stores/guest-cart';
 
@@ -27,7 +34,7 @@ async function refreshShell(session?: Awaited<ReturnType<typeof currentSession>>
   if (accountLink) accountLink.textContent = 'Mi cuenta';
   if (signOutButton) signOutButton.hidden = false;
   try {
-    await ensurePersonalContext((activeSession.user.user_metadata?.preferred_name as string | undefined) ?? '');
+    await ensurePersonalContext(preferredNameForUser(activeSession.user));
     const merge = await mergeGuestCart();
     if (merge?.rejected.length) {
       showNotice(`${merge.rejected.length} articulo(s) ya no estaban disponibles y permanecen en el carrito local.`);

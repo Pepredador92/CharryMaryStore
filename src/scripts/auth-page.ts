@@ -1,4 +1,12 @@
-import { currentSession, loginWithPassword, registerWithPassword } from '../services/auth';
+import {
+  currentSession,
+  ensurePersonalContext,
+  googleLoginAvailable,
+  loginWithGoogle,
+  loginWithPassword,
+  preferredNameForUser,
+  registerWithPassword,
+} from '../services/auth';
 import { mergeGuestCart } from '../services/cart';
 
 const root = document.querySelector<HTMLElement>('[data-auth-app]');
@@ -6,7 +14,20 @@ const root = document.querySelector<HTMLElement>('[data-auth-app]');
 if (root) {
   const login = root.querySelector<HTMLFormElement>('[data-login-form]')!;
   const register = root.querySelector<HTMLFormElement>('[data-register-form]')!;
+  const googleButton = root.querySelector<HTMLButtonElement>('[data-google-auth]')!;
+  const googleButtonLabel = googleButton.querySelector<HTMLElement>('[data-google-auth-label]')!;
   const message = root.querySelector<HTMLElement>('[data-auth-message]')!;
+  const searchParams = new URLSearchParams(window.location.search);
+  let googleAvailable = false;
+
+  function safeNextPath(value: string | null): string {
+    if (!value?.startsWith('/') || value.startsWith('//')) return '/cuenta';
+    const target = new URL(value, window.location.origin);
+    if (target.origin !== window.location.origin || target.pathname === '/acceso') return '/cuenta';
+    return `${target.pathname}${target.search}${target.hash}`;
+  }
+
+  const nextPath = safeNextPath(searchParams.get('next'));
 
   function showMessage(text: string, isError = false): void {
     message.textContent = text;
@@ -18,6 +39,20 @@ if (root) {
     form.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button').forEach((element) => {
       element.disabled = state;
     });
+  }
+
+  function oauthBusy(state: boolean): void {
+    googleButton.disabled = state || !googleAvailable;
+    googleButtonLabel.textContent = state ? 'Conectando con Google...' : 'Continuar con Google';
+  }
+
+  async function finishAuthentication(session: NonNullable<Awaited<ReturnType<typeof currentSession>>>): Promise<void> {
+    await ensurePersonalContext(preferredNameForUser(session.user));
+    const merge = await mergeGuestCart();
+    if (merge?.rejected.length) {
+      window.sessionStorage.setItem('cherry-mary:auth-notice', `${merge.rejected.length} articulo(s) ya no estaban disponibles.`);
+    }
+    window.location.replace(nextPath);
   }
 
   root.querySelectorAll<HTMLButtonElement>('[data-auth-tab]').forEach((tab) => {
@@ -34,6 +69,30 @@ if (root) {
     });
   });
 
+  googleButton.addEventListener('click', async () => {
+    oauthBusy(true);
+    message.hidden = true;
+    try {
+      const callback = new URL('/acceso', window.location.origin);
+      callback.searchParams.set('next', nextPath);
+      await loginWithGoogle(callback.toString());
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : 'No se pudo continuar con Google.', true);
+      oauthBusy(false);
+    }
+  });
+
+  void googleLoginAvailable()
+    .then((available) => {
+      googleAvailable = available;
+      googleButton.disabled = !available;
+      if (!available) googleButton.title = 'Google estara disponible cuando se active el proveedor de acceso.';
+    })
+    .catch(() => {
+      googleAvailable = true;
+      googleButton.disabled = false;
+    });
+
   login.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(login);
@@ -45,7 +104,7 @@ if (root) {
       if (merge?.rejected.length) {
         window.sessionStorage.setItem('cherry-mary:auth-notice', `${merge.rejected.length} articulo(s) ya no estaban disponibles.`);
       }
-      window.location.href = '/cuenta';
+      window.location.href = nextPath;
     } catch (error) {
       showMessage(error instanceof Error ? error.message : 'No se pudo iniciar sesion.', true);
       busy(login, false);
@@ -71,7 +130,7 @@ if (root) {
       );
       if (result.session) {
         await mergeGuestCart();
-        window.location.href = '/cuenta';
+        window.location.href = nextPath;
       } else {
         showMessage('Cuenta registrada. Revisa tu correo para confirmar el acceso antes de iniciar sesion.');
         busy(register, false);
@@ -82,7 +141,15 @@ if (root) {
     }
   });
 
-  void currentSession().then((session) => {
-    if (session) window.location.href = '/cuenta';
-  });
+  const oauthError = searchParams.get('error_description') ?? searchParams.get('error');
+  if (oauthError) {
+    showMessage(oauthError, true);
+  } else {
+    void currentSession()
+      .then((session) => session && finishAuthentication(session))
+      .catch((error) => {
+        showMessage(error instanceof Error ? error.message : 'No se pudo completar el acceso.', true);
+        oauthBusy(false);
+      });
+  }
 }

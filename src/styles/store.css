@@ -129,6 +129,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #e7a4b8; border-c
 .auth-tabs button { padding: 12px; border: 0; border-bottom: 3px solid transparent; background: transparent; cursor: pointer; }
 .auth-tabs button.active { border-color: var(--accent); color: var(--accent-dark); font-weight: 800; }
 .auth-panel form { display: grid; gap: 14px; }
+.google-auth-button { width: 100%; border-color: #bdbbb8; }
+.google-auth-button:hover { border-color: var(--ink); background: var(--soft); }
+.google-auth-button svg { width: 20px; height: 20px; flex: 0 0 20px; }
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--muted); font-size: 12px; }
+.auth-divider::before, .auth-divider::after { content: ''; height: 1px; flex: 1; background: var(--line); }
+.auth-divider span { white-space: nowrap; }
 
 .address-list { display: grid; gap: 12px; }
 .address-row { border: 1px solid var(--line); padding: 14px; border-radius: 4px; }
