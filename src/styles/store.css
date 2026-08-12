@@ -108,7 +108,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #e7a4b8; border-c
 .notice.success { border-color: #9dcbb5; background: #edf8f2; color: var(--green); }
 .badge { display: inline-flex; width: max-content; padding: 4px 8px; border-radius: 3px; background: var(--soft); font-size: 12px; font-weight: 800; text-transform: uppercase; }
 
-.cart-layout, .account-layout, .checkout-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .55fr); gap: 28px; align-items: start; }
+.cart-layout, .account-layout, .checkout-layout, .support-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .55fr); gap: 28px; align-items: start; }
 .panel { border: 1px solid var(--line); background: var(--paper); padding: 22px; border-radius: 6px; }
 .panel h2 { margin: 0 0 18px; font-family: Georgia, serif; font-size: 24px; }
 .cart-line { display: grid; grid-template-columns: 76px minmax(0, 1fr) 90px auto; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
@@ -138,6 +138,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #e7a4b8; border-c
 .order-row:hover strong { color: var(--accent-dark); }
 .confirmation { max-width: 720px; margin: 0 auto; text-align: center; }
 .confirmation h1 { font-family: Georgia, serif; font-size: 42px; }
+.support-request-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.support-request-row div { display: grid; gap: 4px; }
+.support-request-row span, .support-request-row time { color: var(--muted); font-size: 12px; }
 
 .store-footer { display: flex; justify-content: space-between; gap: 20px; padding: 24px clamp(18px, 5vw, 76px); border-top: 1px solid var(--line); background: var(--paper); color: var(--muted); font-size: 13px; }
 .store-footer strong { color: var(--ink); }
@@ -146,7 +149,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #e7a4b8; border-c
   .store-header { grid-template-columns: 1fr auto; gap: 10px; position: static; }
   .store-nav { grid-column: 1 / -1; overflow-x: auto; padding-bottom: 2px; }
   .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .detail-layout, .cart-layout, .account-layout, .checkout-layout { grid-template-columns: 1fr; }
+  .detail-layout, .cart-layout, .account-layout, .checkout-layout, .support-layout { grid-template-columns: 1fr; }
   .cart-summary { position: static; }
 }
 

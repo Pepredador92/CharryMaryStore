@@ -1466,3 +1466,103 @@ Hasta recibir una autorización posterior específica:
 - No debe modificarse Vercel ni `astro.config.mjs`.
 - No debe intervenirse el repositorio exterior.
 - No deben ejecutarse `git add`, `git commit` ni `git push`.
+
+---
+
+## 16. Estado del MVP acelerado
+
+### CM-IMP-02 — Administración de catálogo
+
+**Estado:** implementado y validado.
+
+- Administración de Productos, Presentaciones, Paquetes, componentes, clasificaciones e inventario.
+- Gestión de imágenes mediante el bucket público `catalog-resources` y sus policies aprobadas.
+- Movimientos manuales de inventario mediante RPC transaccional controlada.
+
+### CM-IMP-03 — Tienda, Auth, carrito y checkout
+
+**Estado:** implementado y validado.
+
+- Supabase Auth y onboarding de Cuenta personal.
+- Storefront público de Productos y Paquetes.
+- Carrito visitante local y carrito autenticado persistente, con fusión idempotente.
+- Checkout invitado y autenticado con creación transaccional de Pedido y snapshots históricos.
+- Cuenta del Cliente, direcciones e historial propio con aislamiento RLS.
+
+### CM-IMP-04 — Operación interna e integración final
+
+**Estado:** implementado, aplicado remotamente y validado dentro del alcance disponible.
+
+Migración local nueva:
+
+`supabase/migrations/20260812043957_mvp_internal_operations.sql`
+
+Versión remota registrada:
+
+`20260812050157 mvp_internal_operations`
+
+La migración implementa RPCs controladas para:
+
+- Dashboard operativo derivado, detalle de Pedido, confirmación y cancelación.
+- Autorización transaccional de Preparación con bloqueo de inventario, cálculo desde componentes históricos de Paquetes, rollback completo y movimientos append-only.
+- Ciclo de Preparación, verificaciones y acciones históricas.
+- Creación y operación de Entrega, proveedores, asignaciones, custodia e intentos múltiples.
+- Metadatos restringidos de evidencia, conservación y eliminación lógica auditada.
+- Solicitudes de atención asíncrona para visitantes y Cuentas personales, conversación autoritativa, respuesta y cierre operativos.
+
+La interfaz incluye:
+
+- Dashboard `/admin`.
+- Pedidos y detalle.
+- Preparación y detalle.
+- Entregas y detalle.
+- Atención operativa y detalle.
+- Vista append-only de auditoría.
+- Formulario público `/ayuda` sin chat, Realtime, chatbot ni IA.
+
+Seguridad validada:
+
+- 36 tablas en `public`; 36/36 con RLS habilitado.
+- 66 policies remotas; CM-IMP-04 no agregó policies directas a `support_requests`, `support_messages` ni `delivery_evidence_items`.
+- Las tablas server-only permanecen sin acceso directo y se operan mediante RPCs estrechas.
+- Los actores y capabilities operativos se derivan de Auth; no se aceptan desde el frontend.
+- Las funciones privilegiadas están en `private`, usan `search_path = pg_catalog`, revocan `PUBLIC` y exponen wrappers `SECURITY INVOKER` en `public`.
+- La única RPC disponible para `anon` es la presentación controlada de solicitudes de atención.
+- `service_role` no está presente en el frontend y `.env.local` permaneció intacto.
+- `public.rls_auto_enable` y `ensure_rls` permanecen intactos.
+
+Bootstrap del primer Administrador:
+
+- Existe el script manual e idempotente `supabase/manual/bootstrap_first_operational_admin.sql`.
+- Requiere UUID real de `auth.users`, referencia interna, nombre visible y códigos de capabilities existentes.
+- Es transaccional, valida capabilities y evita duplicados.
+- No fue ejecutado porque todavía no existe un usuario Auth real del propietario.
+
+Validación:
+
+- `supabase/tests/mvp_internal_operations.sql` cubre autorización, rollback por inventario insuficiente, Paquete multicomponente, doble autorización, ciclo de Preparación, Entrega con múltiples intentos, soporte e historiales append-only.
+- Las pruebas remotas terminaron correctamente dentro de transacciones con rollback y no dejaron fixtures.
+- QA visual validado aproximadamente en 1440×900 y 390×844.
+- Build de 25 rutas correcto.
+- Astro check: 0 errores, 0 warnings y 0 hints.
+- `git diff --check`: correcto.
+
+Pendientes externos o deliberadamente diferidos:
+
+- Ejecutar manualmente el bootstrap cuando exista el usuario Auth real del propietario.
+- Proveedor real de correo para notificaciones; `support_messages` sigue siendo el único historial autoritativo.
+- Automatización de eliminación de evidencia y definición de cierre formal de disputas.
+- Pagos, reembolsos, devoluciones y logística inversa completa.
+- Integración con proveedor logístico externo.
+- Recuperación web de Pedidos de invitados.
+- Antiabuso externo del checkout invitado y del formulario público de atención.
+- Hardening aprobado de `public.rls_auto_enable` y `ensure_rls`.
+- Reconciliación explícita del drift; no ejecutar `supabase db push` a ciegas ni reaplicar migraciones.
+- Validación de despliegue/configuración en Vercel después de commit y push del usuario.
+
+Security Advisor conserva únicamente deuda conocida dentro de este alcance:
+
+- Avisos informativos por las tres tablas server-only sin policies directas.
+- Warnings preexistentes por `EXECUTE` disponible en `public.rls_auto_enable` para `anon` y `authenticated`.
+
+No se crearon pagos, analytics, tracking, chat en tiempo real, buckets sensibles, cron, Edge Functions ni integraciones externas.

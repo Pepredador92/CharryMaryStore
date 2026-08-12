@@ -1,0 +1,25 @@
+<section class="page-band" data-support-workspace>
+  <div class="page-inner">
+    <div class="page-heading"><div><h1>Ayuda</h1></div></div>
+    <div class="support-layout">
+      <form class="panel form-grid" data-support-form>
+        <label class="wide">Asunto<input name="subject" required maxlength="160" /></label>
+        <label class="wide">Motivo<textarea name="purpose" required maxlength="500"></textarea></label>
+        <label>Correo electrónico<input name="email" type="email" autocomplete="email" /></label>
+        <label>Teléfono<input name="phone" type="tel" autocomplete="tel" /></label>
+        <label class="wide">Mensaje<textarea name="body" required maxlength="4000"></textarea></label>
+        <label class="check-field wide"><input type="checkbox" name="sensitive" /> Contiene información sensible</label>
+        <div class="form-actions wide"><button class="button primary" type="submit">Enviar solicitud</button></div>
+        <div class="notice wide" data-support-message hidden role="status"></div>
+      </form>
+      <section class="panel" data-my-support hidden>
+        <h2>Mis solicitudes</h2>
+        <div data-my-support-list></div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/support-page';
+</script>

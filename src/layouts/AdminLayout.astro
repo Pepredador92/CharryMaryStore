@@ -3,12 +3,17 @@ import '../styles/admin.css';
 
 interface Props {
   title: string;
-  section: 'dashboard' | 'products' | 'packages' | 'inventory' | 'classifications';
+  section: 'dashboard' | 'products' | 'packages' | 'inventory' | 'classifications' | 'orders' | 'preparation' | 'deliveries' | 'support' | 'audit';
 }
 
 const { title, section } = Astro.props;
 const navItems = [
   { id: 'dashboard', label: 'Resumen', href: '/admin' },
+  { id: 'orders', label: 'Pedidos', href: '/admin/pedidos' },
+  { id: 'preparation', label: 'Preparación', href: '/admin/preparacion' },
+  { id: 'deliveries', label: 'Entregas', href: '/admin/entregas' },
+  { id: 'support', label: 'Atención', href: '/admin/atencion' },
+  { id: 'audit', label: 'Auditoría', href: '/admin/auditoria' },
   { id: 'products', label: 'Productos', href: '/admin/productos' },
   { id: 'packages', label: 'Paquetes', href: '/admin/paquetes' },
   { id: 'inventory', label: 'Inventario', href: '/admin/inventario' },
@@ -33,7 +38,7 @@ const navItems = [
           <strong>Cherry Mary</strong>
           <span>Administración</span>
         </a>
-        <nav class="admin-nav" aria-label="Administración del catálogo">
+        <nav class="admin-nav" aria-label="Administración">
           {
             navItems.map((item) => (
               <a href={item.href} aria-current={item.id === section ? 'page' : undefined}>
@@ -42,7 +47,7 @@ const navItems = [
             ))
           }
         </nav>
-        <div class="admin-sidebar-foot">Catálogo comercial e inventario</div>
+        <div class="admin-sidebar-foot">Operación interna</div>
       </aside>
 
       <main class="admin-main">

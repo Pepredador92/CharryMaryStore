@@ -1,0 +1,72 @@
+---
+interface Props {
+  section: 'dashboard' | 'orders' | 'order' | 'preparation' | 'preparation-detail' | 'deliveries' | 'delivery-detail' | 'support' | 'support-detail' | 'audit';
+  title: string;
+}
+
+const { section, title } = Astro.props;
+const listSection = ['orders', 'preparation', 'deliveries', 'support', 'audit'].includes(section);
+---
+
+<div data-operations-workspace data-section={section}>
+  <section class="auth-panel" data-auth-panel hidden>
+    <h1>Acceso operativo</h1>
+    <p>Ingresa con tu cuenta autorizada.</p>
+    <form data-auth-form>
+      <label>Correo<input name="email" type="email" autocomplete="username" required /></label>
+      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required /></label>
+      <p class="notice error" data-auth-error hidden></p>
+      <button class="button primary" type="submit">Ingresar</button>
+    </form>
+  </section>
+
+  <section class="state-box panel" data-loading-state>
+    <div><strong>Cargando</strong>Consultando acceso y datos operativos.</div>
+  </section>
+
+  <section class="state-box panel" data-access-state hidden>
+    <div><strong>Acceso restringido</strong>Tu cuenta no tiene la capacidad necesaria.</div>
+  </section>
+
+  <div data-workspace-content hidden>
+    <header class="page-heading">
+      <div><h1>{title}</h1></div>
+      <div class="page-actions" data-page-actions></div>
+    </header>
+
+    {listSection && (
+      <div class="filter-bar panel operation-filters">
+        <input class="search-input" type="search" placeholder="Buscar" aria-label="Buscar" data-search />
+        <select aria-label="Filtrar por estado" data-status-filter>
+          <option value="">Todos los estados</option>
+        </select>
+        <input type="date" aria-label="Fecha inicial" data-date-from hidden={section !== 'audit'} />
+        <input type="date" aria-label="Fecha final" data-date-to hidden={section !== 'audit'} />
+      </div>
+    )}
+
+    <section class="panel operation-panel" data-content>
+      <div class="state-box"><div><strong>Sin datos</strong></div></div>
+    </section>
+  </div>
+
+  <div class="toast notice" data-toast hidden></div>
+
+  <dialog data-operation-dialog>
+    <div class="dialog-head">
+      <h2 data-dialog-title>Acción</h2>
+      <button class="icon-button" type="button" aria-label="Cerrar" title="Cerrar" data-close-dialog>×</button>
+    </div>
+    <form class="dialog-body" data-operation-form>
+      <div class="form-grid" data-dialog-fields></div>
+      <div class="form-actions">
+        <button class="button" type="button" data-close-dialog>Cancelar</button>
+        <button class="button primary" type="submit" data-submit-action>Guardar</button>
+      </div>
+    </form>
+  </dialog>
+</div>
+
+<script>
+  import '../../scripts/operations-workspace';
+</script>
