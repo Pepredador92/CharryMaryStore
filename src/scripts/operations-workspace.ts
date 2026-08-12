@@ -222,7 +222,9 @@ class OperationsWorkspace {
       audit: ['catalog', 'access', 'customer', 'order', 'inventory', 'preparation', 'delivery', 'support'],
     };
     const label = this.section === 'audit' ? 'Todas las áreas' : 'Todos los estados';
-    select.innerHTML = `<option value="">${label}</option>${(values[this.section] ?? []).map((value) => `<option value="${value}">${value.replaceAll('_', ' ')}</option>`).join('')}`;
+    const defaultValue = this.section === 'orders' ? '__active__' : '';
+    const defaultLabel = this.section === 'orders' ? 'Pedidos activos' : label;
+    select.innerHTML = `<option value="${defaultValue}">${defaultLabel}</option>${(values[this.section] ?? []).map((value) => `<option value="${value}">${value.replaceAll('_', ' ')}</option>`).join('')}${this.section === 'orders' ? `<option value="">${label}</option>` : ''}`;
   }
 
   private render(): void {
@@ -256,7 +258,11 @@ class OperationsWorkspace {
   private filtered(rows: JsonRecord[], statusKey = 'status'): JsonRecord[] {
     const term = this.optional<HTMLInputElement>('[data-search]')?.value.trim().toLowerCase() ?? '';
     const status = this.optional<HTMLSelectElement>('[data-status-filter]')?.value ?? '';
-    return rows.filter((row) => (!status || String(row[statusKey]) === status) && (!term || JSON.stringify(row).toLowerCase().includes(term)));
+    return rows.filter((row) => {
+      const rowStatus = String(row[statusKey]);
+      const matchesStatus = status === '__active__' ? rowStatus !== 'cancelled' : !status || rowStatus === status;
+      return matchesStatus && (!term || JSON.stringify(row).toLowerCase().includes(term));
+    });
   }
 
   private renderOrders(): void {
