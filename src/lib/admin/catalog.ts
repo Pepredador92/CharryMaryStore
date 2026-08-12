@@ -154,6 +154,14 @@ function catalogImageMetadata(file: File): { contentType: string; extension: str
   return { contentType, extension: CATALOG_IMAGE_EXTENSIONS[contentType] };
 }
 
+async function readCatalogImage(file: File): Promise<ArrayBuffer> {
+  try {
+    return await file.arrayBuffer();
+  } catch {
+    throw new Error('No se pudo leer la imagen seleccionada. Vuelve a elegir el archivo.');
+  }
+}
+
 function requireData<T>(result: QueryResult<T>, context: string): T {
   if (result.error) {
     throw new Error(`${context}: ${result.error.message}`);
@@ -361,8 +369,9 @@ export async function uploadCatalogResource(input: {
   sortOrder: number;
 }): Promise<void> {
   const { contentType, extension } = catalogImageMetadata(input.file);
+  const fileBody = await readCatalogImage(input.file);
   const path = `${input.ownerType}/${input.ownerId}/${crypto.randomUUID()}.${extension}`;
-  const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, input.file, {
+  const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, fileBody, {
     cacheControl: '3600',
     contentType,
     upsert: false,
@@ -411,13 +420,14 @@ export async function setPrimaryCatalogResource(id: string): Promise<void> {
 
 export async function replaceCatalogResource(resource: CatalogResource, file: File): Promise<void> {
   const { contentType, extension } = catalogImageMetadata(file);
+  const fileBody = await readCatalogImage(file);
   const owner = resource.product_id
     ? `product/${resource.product_id}`
     : resource.presentation_id
       ? `presentation/${resource.presentation_id}`
       : `package/${resource.package_id}`;
   const path = `${owner}/${crypto.randomUUID()}.${extension}`;
-  const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, file, {
+  const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, fileBody, {
     cacheControl: '3600',
     contentType,
     upsert: false,

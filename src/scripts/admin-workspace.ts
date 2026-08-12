@@ -843,7 +843,18 @@ class AdminWorkspace {
   }
 
   private setFormBusy(form: HTMLFormElement, busy: boolean): void {
+    form.setAttribute('aria-busy', String(busy));
     form.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      const busyText = button.dataset.busyText;
+      if (busyText) {
+        if (busy) {
+          button.dataset.idleText = button.textContent ?? '';
+          button.textContent = busyText;
+        } else if (button.dataset.idleText !== undefined) {
+          button.textContent = button.dataset.idleText;
+          delete button.dataset.idleText;
+        }
+      }
       button.disabled = busy;
     });
   }

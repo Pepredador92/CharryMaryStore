@@ -278,7 +278,9 @@ const createLabels = {
         </label>
         <label>Texto alternativo<input name="alt_text" maxlength="240" /></label>
         <label>Orden<input name="sort_order" type="number" min="0" step="1" value="0" required /></label>
-        <div class="form-actions wide"><button class="button primary" type="submit">Subir imagen</button></div>
+        <div class="form-actions wide">
+          <button class="button primary" type="submit" data-busy-text="Subiendo...">Subir imagen</button>
+        </div>
       </form>
       <input
         type="file"
