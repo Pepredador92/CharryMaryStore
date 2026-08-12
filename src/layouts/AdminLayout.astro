@@ -54,9 +54,15 @@ const navItems = [
       <main class="admin-main">
         <header class="admin-topbar">
           <p>Operación protegida por capabilities y RLS</p>
-          <div class="admin-session">
-            <span class="admin-session-email" data-session-email>Sesión no iniciada</span>
-            <button class="button quiet small" type="button" data-sign-out hidden>Cerrar sesión</button>
+          <div class="admin-topbar-actions">
+            <a class="button small store-preview-link" href="/" target="_blank" rel="noopener">
+              Ver tienda
+              <span aria-hidden="true">↗</span>
+            </a>
+            <div class="admin-session">
+              <span class="admin-session-email" data-session-email>Sesión no iniciada</span>
+              <button class="button quiet small" type="button" data-sign-out hidden>Cerrar sesión</button>
+            </div>
           </div>
         </header>
         <div class="admin-content">

@@ -160,6 +160,18 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+.admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.store-preview-link {
+  gap: 6px;
+  white-space: nowrap;
+}
+
 .admin-session-email {
   max-width: 260px;
   color: #4d5257;
@@ -945,6 +957,15 @@ dialog::backdrop {
 
   .admin-topbar {
     padding: 9px 14px;
+  }
+
+  .admin-topbar p {
+    display: none;
+  }
+
+  .admin-topbar-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .admin-content {

@@ -457,9 +457,10 @@ class OperationsWorkspace {
     event.preventDefault();
     if (!this.submitHandler) return;
     const form = event.currentTarget as HTMLFormElement;
+    const data = new FormData(form);
     this.busy(form, true);
     try {
-      await this.submitHandler(new FormData(form));
+      await this.submitHandler(data);
       this.dialog().close();
       form.reset();
       await this.reload();
