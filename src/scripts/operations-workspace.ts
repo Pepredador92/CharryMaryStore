@@ -1,9 +1,11 @@
 import { supabase } from '../lib/supabase/client';
 import { getCurrentCapabilities } from '../lib/admin/catalog';
 import {
+  archiveOrderWorkflow,
   assignDelivery,
   authorizePreparation,
   createDelivery,
+  deleteSupportRequest,
   deleteDeliveryEvidence,
   loadAuditEvents,
   loadDeliveries,
@@ -16,6 +18,7 @@ import {
   loadPreparationDetail,
   loadPreparations,
   loadSupportRequests,
+  loadSupportReferenceOptions,
   manageOrder,
   managePreparation,
   recordDeliveryCustody,
@@ -285,7 +288,7 @@ class OperationsWorkspace {
       <section><h2>Acciones</h2>${actionRows ? table(['Fecha', 'Acción', 'Causa'], actionRows) : empty('Sin acciones operativas')}</section>
     </div>`;
     const actionsRoot = this.actions();
-    actionsRoot.innerHTML = `<a class="button" href="/admin/pedidos">Volver</a>${this.can('orders.manage') && order.commercial_status === 'pending_confirmation' ? `<button class="button primary" data-action="confirm-order" data-id="${order.id}">Confirmar</button>` : ''}${this.can('orders.manage') && ['pending_confirmation', 'confirmed'].includes(order.commercial_status) && !order.preparation_authorized_at ? `<button class="button danger" data-action="cancel-order" data-id="${order.id}">Cancelar</button>` : ''}${this.can('orders.manage') && order.commercial_status === 'confirmed' && !order.preparation_authorized_at ? `<button class="button primary" data-action="authorize-preparation" data-id="${order.id}">Autorizar preparación</button>` : ''}`;
+    actionsRoot.innerHTML = `<a class="button" href="/admin/pedidos">Volver</a>${this.can('orders.manage') && order.commercial_status === 'pending_confirmation' ? `<button class="button primary" data-action="confirm-order" data-id="${order.id}">Confirmar</button>` : ''}${this.can('orders.manage') && ['pending_confirmation', 'confirmed'].includes(order.commercial_status) && !order.preparation_authorized_at ? `<button class="button danger" data-action="cancel-order" data-id="${order.id}">Cancelar</button>` : ''}${this.can('orders.manage') && order.commercial_status === 'confirmed' && !order.preparation_authorized_at ? `<button class="button primary" data-action="authorize-preparation" data-id="${order.id}">Autorizar preparación</button>` : ''}${this.can('orders.manage') ? `<button class="button danger" data-action="archive-order" data-id="${order.id}">Retirar del panel</button>` : ''}`;
   }
 
   private renderPreparations(): void {
@@ -299,7 +302,7 @@ class OperationsWorkspace {
     const history = (actions as JsonRecord[]).map((action) => `<tr><td>${formatDate(action.occurred_at)}</td><td>${escapeHtml(action.action_kind)}</td><td>${escapeHtml(action.result ?? '—')}</td><td>${escapeHtml(action.cause ?? '—')}</td></tr>`).join('');
     this.content().innerHTML = `<div class="panel-body detail-stack"><div class="detail-grid"><div><span>Pedido</span><strong class="mono">${escapeHtml(order.order_number)}</strong></div><div><span>Estado</span>${badge(preparation.status)}</div><div><span>Inicio</span><strong>${formatDate(preparation.started_at)}</strong></div><div><span>Responsable</span><strong class="mono">${escapeHtml(preparation.current_responsible_person_id ?? 'Sin asignar')}</strong></div></div><section><h2>Verificación</h2>${table(['#', 'Partida', 'Estado', ''], itemRows)}</section><section><h2>Historial</h2>${history ? table(['Fecha', 'Acción', 'Resultado', 'Causa'], history) : empty('Sin acciones')}</section></div>`;
     const canOperate = this.any('preparation.operate', 'preparation.manage');
-    this.actions().innerHTML = `<a class="button" href="/admin/preparacion">Volver</a>${canOperate && ['pending', 'reopened'].includes(preparation.status) ? `<button class="button primary" data-action="prep-action" data-kind="start">Comenzar</button>` : ''}${canOperate && ['pending', 'in_progress', 'reopened'].includes(preparation.status) ? `<button class="button danger" data-action="prep-cause" data-kind="block">Bloquear</button>` : ''}${canOperate && preparation.status === 'blocked' ? `<button class="button" data-action="prep-action" data-kind="unblock">Desbloquear</button>` : ''}${canOperate && ['in_progress', 'reopened'].includes(preparation.status) ? `<button class="button primary" data-action="prep-action" data-kind="complete">Completar</button>` : ''}${canOperate && ['pending', 'in_progress', 'blocked', 'reopened'].includes(preparation.status) ? `<button class="button danger" data-action="prep-cause" data-kind="end_incomplete">Terminar incompleta</button>` : ''}${this.can('preparation.manage') && ['completed', 'ended_incomplete'].includes(preparation.status) ? `<button class="button" data-action="prep-cause" data-kind="reopen">Reabrir</button>` : ''}${this.can('delivery.manage') && preparation.status === 'completed' ? `<button class="button primary" data-action="create-delivery" data-id="${order.id}">Crear entrega</button>` : ''}`;
+    this.actions().innerHTML = `<a class="button" href="/admin/preparacion">Volver</a>${canOperate && ['pending', 'reopened'].includes(preparation.status) ? `<button class="button primary" data-action="prep-action" data-kind="start">Comenzar</button>` : ''}${canOperate && ['pending', 'in_progress', 'reopened'].includes(preparation.status) ? `<button class="button danger" data-action="prep-cause" data-kind="block">Bloquear</button>` : ''}${canOperate && preparation.status === 'blocked' ? `<button class="button" data-action="prep-action" data-kind="unblock">Desbloquear</button>` : ''}${canOperate && ['in_progress', 'reopened'].includes(preparation.status) ? `<button class="button primary" data-action="prep-action" data-kind="complete">Completar</button>` : ''}${canOperate && ['pending', 'in_progress', 'blocked', 'reopened'].includes(preparation.status) ? `<button class="button danger" data-action="prep-cause" data-kind="end_incomplete">Terminar incompleta</button>` : ''}${this.can('preparation.manage') && ['completed', 'ended_incomplete'].includes(preparation.status) ? `<button class="button" data-action="prep-cause" data-kind="reopen">Reabrir</button>` : ''}${this.can('delivery.manage') && preparation.status === 'completed' ? `<button class="button primary" data-action="create-delivery" data-id="${order.id}">Crear entrega</button>` : ''}${this.can('orders.manage') ? `<button class="button danger" data-action="archive-order" data-id="${order.id}">Retirar del panel</button>` : ''}`;
   }
 
   private renderDeliveries(): void {
@@ -316,7 +319,7 @@ class OperationsWorkspace {
     const actionRows = (actions as JsonRecord[]).map((item) => `<tr><td>${formatDate(item.occurred_at)}</td><td>${escapeHtml(item.action_kind)}</td><td>${escapeHtml(item.cause)}</td></tr>`).join('');
     this.content().innerHTML = `<div class="panel-body detail-stack"><div class="detail-grid"><div><span>Pedido</span><strong class="mono">${escapeHtml(order.order_number)}</strong></div><div><span>Estado</span>${badge(delivery.status)}</div><div><span>Resultado</span><strong>${escapeHtml(delivery.final_result ?? 'Pendiente')}</strong></div><div><span>Destino</span><strong>${escapeHtml(destination?.city)}, ${escapeHtml(destination?.region)}</strong></div></div><section><h2>Asignaciones</h2>${assignmentRows ? table(['Responsable', 'Tipo', 'Inicio', 'Fin'], assignmentRows) : empty('Sin asignación')}</section><section><h2>Custodia</h2>${custodyRows ? table(['Fecha', 'Evento', 'Transferencia', 'Causa'], custodyRows) : empty('Sin eventos de custodia')}</section><section><h2>Intentos</h2>${attemptRows ? table(['#', 'Resultado', 'Fecha', 'Detalle'], attemptRows) : empty('Sin intentos')}</section><section><h2>Evidencia</h2><div data-evidence>${this.any('delivery_evidence.read', 'delivery_evidence.manage') ? empty('Cargando evidencia') : empty('Acceso restringido')}</div></section><section><h2>Acciones</h2>${actionRows ? table(['Fecha', 'Acción', 'Causa'], actionRows) : empty('Sin acciones')}</section></div>`;
     const active = ['pending', 'in_custody', 'in_transit', 'blocked', 'reopened'].includes(delivery.status);
-    this.actions().innerHTML = `<a class="button" href="/admin/entregas">Volver</a>${this.can('delivery.manage') && active ? '<button class="button" data-action="assign-delivery">Asignar</button>' : ''}${this.any('delivery.operate', 'delivery.manage') && active ? '<button class="button" data-action="custody-delivery">Custodia</button>' : ''}${this.any('delivery.operate', 'delivery.manage') && ['in_custody', 'reopened'].includes(delivery.status) ? '<button class="button primary" data-action="delivery-cause" data-kind="start_transit">Iniciar tránsito</button>' : ''}${this.any('delivery.operate', 'delivery.manage') && ['in_custody', 'in_transit', 'reopened'].includes(delivery.status) ? '<button class="button primary" data-action="delivery-attempt">Registrar intento</button>' : ''}${this.any('delivery.operate', 'delivery.manage') && active && delivery.status !== 'blocked' ? '<button class="button danger" data-action="delivery-cause" data-kind="block">Bloquear</button>' : ''}${this.can('delivery.manage') && delivery.status === 'completed' ? '<button class="button" data-action="delivery-cause" data-kind="reopen">Reabrir</button>' : ''}${this.can('delivery_evidence.manage') ? '<button class="button" data-action="new-evidence">Registrar evidencia</button>' : ''}`;
+    this.actions().innerHTML = `<a class="button" href="/admin/entregas">Volver</a>${this.can('delivery.manage') && active ? '<button class="button" data-action="assign-delivery">Asignar</button>' : ''}${this.any('delivery.operate', 'delivery.manage') && active ? '<button class="button" data-action="custody-delivery">Custodia</button>' : ''}${this.any('delivery.operate', 'delivery.manage') && ['in_custody', 'reopened'].includes(delivery.status) ? '<button class="button primary" data-action="delivery-cause" data-kind="start_transit">Iniciar tránsito</button>' : ''}${this.any('delivery.operate', 'delivery.manage') && ['in_custody', 'in_transit', 'reopened'].includes(delivery.status) ? '<button class="button primary" data-action="delivery-attempt">Registrar intento</button>' : ''}${this.any('delivery.operate', 'delivery.manage') && active && delivery.status !== 'blocked' ? '<button class="button danger" data-action="delivery-cause" data-kind="block">Bloquear</button>' : ''}${this.can('delivery.manage') && delivery.status === 'completed' ? '<button class="button" data-action="delivery-cause" data-kind="reopen">Reabrir</button>' : ''}${this.can('delivery_evidence.manage') ? '<button class="button" data-action="new-evidence">Registrar evidencia</button>' : ''}${this.can('orders.manage') ? `<button class="button danger" data-action="archive-order" data-id="${order.id}">Retirar del panel</button>` : ''}`;
     if (this.any('delivery_evidence.read', 'delivery_evidence.manage')) void this.renderEvidence(delivery.id);
   }
 
@@ -343,7 +346,7 @@ class OperationsWorkspace {
       ? `<form class="admin-support-composer" data-admin-support-reply><textarea name="body" required maxlength="4000" aria-label="Respuesta" placeholder="Escribe una respuesta como Mary..."></textarea><button class="button primary" type="submit">Enviar</button>${this.can('support.sensitive') ? '<label class="check-field"><input type="checkbox" name="sensitive"> Contenido sensible</label>' : ''}</form>`
       : '<div class="notice">La conversación está cerrada.</div>';
     this.content().innerHTML = `<div class="panel-body detail-stack"><div class="detail-grid"><div><span>Asunto</span><strong>${escapeHtml(request.subject)}</strong></div><div><span>Estado</span>${badge(request.status)}</div><div><span>Contacto</span><strong>${escapeHtml(request.contact_email ?? request.contact_phone ?? request.pseudonymous_reference ?? '—')}</strong></div><div><span>Apertura</span><strong>${formatDate(request.opened_at)}</strong></div></div><section class="admin-support-chat"><h2>Conversación con el cliente</h2><div class="message-list" data-admin-message-list>${messages.map((message) => `<article class="support-message ${message.direction}"><header><strong>${message.direction === 'incoming' ? 'Cliente' : 'Mary'}</strong><span>${formatDate(message.sent_at)}${message.is_sensitive ? ' · Sensible' : ''}</span></header><p>${escapeHtml(message.body)}</p></article>`).join('')}</div>${composer}</section></div>`;
-    this.actions().innerHTML = `<a class="button" href="/admin/atencion">Volver</a>${request.status !== 'closed' && this.can('support.handle') ? '<button class="button" data-action="support-status">Cambiar estado</button>' : ''}`;
+    this.actions().innerHTML = `<a class="button" href="/admin/atencion">Volver</a>${this.can('support.handle') ? '<button class="button" data-action="support-status">Cambiar estado</button><button class="button danger" data-action="delete-support">Eliminar conversación</button>' : ''}`;
     requestAnimationFrame(() => {
       const list = this.optional<HTMLElement>('[data-admin-message-list]');
       if (list) list.scrollTop = list.scrollHeight;
@@ -387,7 +390,9 @@ class OperationsWorkspace {
       if (action === 'delivery-attempt') this.openAttempt();
       if (action === 'new-evidence') this.openEvidence();
       if (action === 'delete-evidence' && id) this.openCause('Eliminar evidencia lógicamente', (cause) => deleteDeliveryEvidence(id, cause));
-      if (action === 'support-status') this.openSupportStatus();
+      if (action === 'support-status') await this.openSupportStatus();
+      if (action === 'delete-support') this.openDeleteSupport();
+      if (action === 'archive-order' && id) this.openArchiveOrder(id);
     } catch (error) {
       this.toast(this.message(error), 'error');
     }
@@ -466,9 +471,55 @@ class OperationsWorkspace {
     }
   }
 
-  private openSupportStatus(): void {
-    this.openDialog('Estado de atención', '<label>Estado<select name="status"><option value="in_attention">En atención</option><option value="resolved">Resuelta</option><option value="channelled">Canalizada</option><option value="closed">Cerrada</option></select></label><label>Tipo de vínculo<select name="reference_kind"><option value="">Sin cambio</option><option value="order">Pedido</option><option value="preparation">Preparación</option><option value="delivery">Entrega</option></select></label><label class="wide">Identificador vinculado<input name="reference_id"></label><label class="wide">Causa de cierre<textarea name="cause"></textarea></label>', async (data) => {
-      await setSupportStatus({ id: this.queryId(), status: String(data.get('status')), cause: String(data.get('cause') ?? ''), referenceKind: String(data.get('reference_kind') ?? ''), referenceId: String(data.get('reference_id') ?? '') });
+  private async openSupportStatus(): Promise<void> {
+    const options = await loadSupportReferenceOptions();
+    const request = this.data.request as JsonRecord;
+    const currentReference = request.order_id
+      ? `order:${request.order_id}`
+      : request.preparation_id
+        ? `preparation:${request.preparation_id}`
+        : request.delivery_id
+          ? `delivery:${request.delivery_id}`
+          : 'keep';
+    const optionRows = (kind: string, rows: JsonRecord[], label: string) => rows.length
+      ? `<optgroup label="${label}">${rows.map((item) => `<option value="${kind}:${item.id}" ${currentReference === `${kind}:${item.id}` ? 'selected' : ''}>${escapeHtml(item.order_number)} · ${escapeHtml(String(item.status).replaceAll('_', ' '))}</option>`).join('')}</optgroup>`
+      : '';
+    const statuses = [
+      ['open', 'Abierta'],
+      ['in_attention', 'En atención'],
+      ['resolved', 'Resuelta'],
+      ['channelled', 'Canalizada'],
+      ['closed', 'Cerrada'],
+    ];
+    this.openDialog('Estado de atención', `<label>Estado<select name="status">${statuses.map(([value, label]) => `<option value="${value}" ${request.status === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label><label class="wide">Vínculo operativo<select name="reference"><option value="keep" ${currentReference === 'keep' ? 'selected' : ''}>Conservar vínculo actual</option><option value="none">Quitar vínculo</option>${optionRows('order', options.orders ?? [], 'Pedidos')}${optionRows('preparation', options.preparations ?? [], 'Preparaciones')}${optionRows('delivery', options.deliveries ?? [], 'Entregas')}</select></label><p class="notice wide">Al cerrar, escribe obligatoriamente el motivo. Una conversación cerrada puede reabrirse cambiando nuevamente su estado.</p><label class="wide">Motivo<textarea name="cause" maxlength="1000"></textarea></label>`, async (data) => {
+      const reference = String(data.get('reference') ?? 'keep');
+      const separator = reference.indexOf(':');
+      await setSupportStatus({
+        id: this.queryId(),
+        status: String(data.get('status')),
+        cause: String(data.get('cause') ?? ''),
+        referenceKind: separator > 0 ? reference.slice(0, separator) : reference,
+        referenceId: separator > 0 ? reference.slice(separator + 1) : '',
+      });
+    });
+  }
+
+  private openDeleteSupport(): void {
+    this.openDialog('Eliminar conversación', '<p class="notice wide">La conversación desaparecerá del panel y del perfil del cliente. El historial se conservará internamente para auditoría.</p><label class="wide">Motivo de eliminación<textarea name="reason" required maxlength="1000"></textarea></label>', async (data) => {
+      await deleteSupportRequest(this.queryId(), String(data.get('reason') ?? '').trim());
+      window.setTimeout(() => { window.location.href = '/admin/atencion'; }, 0);
+    });
+  }
+
+  private openArchiveOrder(orderId: string): void {
+    const destination = this.section === 'order'
+      ? '/admin/pedidos'
+      : this.section === 'preparation-detail'
+        ? '/admin/preparacion'
+        : '/admin/entregas';
+    this.openDialog('Retirar flujo del panel', '<p class="notice wide">El Pedido y sus etapas dejarán de aparecer en Pedidos, Preparación y Entregas. Los pagos, acciones y auditoría no se borrarán.</p><label class="wide">Inventario<select name="inventory" required><option value="restore">Sí, devolver los productos descontados al inventario</option><option value="keep">No, conservar el inventario como está</option></select></label><label class="wide">Motivo<textarea name="reason" required maxlength="1000"></textarea></label>', async (data) => {
+      await archiveOrderWorkflow(orderId, data.get('inventory') === 'restore', String(data.get('reason') ?? '').trim());
+      window.setTimeout(() => { window.location.href = destination; }, 0);
     });
   }
 

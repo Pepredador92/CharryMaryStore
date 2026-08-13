@@ -13,7 +13,7 @@ export async function loadOperationalDashboard(): Promise<JsonRecord> {
 
 export async function loadOrders(): Promise<JsonRecord[]> {
   return unwrap(
-    await supabase.from('orders').select('*').order('placed_at', { ascending: false }).limit(500),
+    await supabase.from('orders').select('*').is('archived_at', null).order('placed_at', { ascending: false }).limit(500),
     'No se pudieron cargar los pedidos',
   ) ?? [];
 }
@@ -32,7 +32,7 @@ export async function authorizePreparation(orderId: string): Promise<JsonRecord>
 
 export async function loadPreparations(): Promise<JsonRecord[]> {
   return unwrap(
-    await supabase.from('preparations').select('*, orders(order_number, commercial_status)').order('created_at', { ascending: false }).limit(500),
+    await supabase.from('preparations').select('*, orders!inner(order_number, commercial_status, archived_at)').is('orders.archived_at', null).order('created_at', { ascending: false }).limit(500),
     'No se pudieron cargar las preparaciones',
   ) ?? [];
 }
@@ -64,7 +64,7 @@ export async function createDelivery(orderId: string): Promise<JsonRecord> {
 
 export async function loadDeliveries(): Promise<JsonRecord[]> {
   return unwrap(
-    await supabase.from('deliveries').select('*, orders(order_number, commercial_status)').order('recognized_at', { ascending: false }).limit(500),
+    await supabase.from('deliveries').select('*, orders!inner(order_number, commercial_status, archived_at)').is('orders.archived_at', null).order('recognized_at', { ascending: false }).limit(500),
     'No se pudieron cargar las entregas',
   ) ?? [];
 }
@@ -197,6 +197,25 @@ export async function deleteDeliveryEvidence(id: string, reason: string): Promis
 
 export async function loadSupportRequests(id?: string): Promise<JsonRecord | JsonRecord[]> {
   return unwrap(await supabase.rpc('support_requests_view', { p_request_id: id ?? null }), 'No se pudo cargar atención');
+}
+
+export async function loadSupportReferenceOptions(): Promise<JsonRecord> {
+  return unwrap(await supabase.rpc('support_reference_options'), 'No se pudieron cargar los vínculos disponibles');
+}
+
+export async function deleteSupportRequest(id: string, reason: string): Promise<void> {
+  unwrap(await supabase.rpc('delete_support_request', { p_request_id: id, p_reason: reason }), 'No se pudo eliminar la conversación');
+}
+
+export async function archiveOrderWorkflow(id: string, restoreInventory: boolean, reason: string): Promise<JsonRecord> {
+  return unwrap(
+    await supabase.rpc('archive_order_workflow', {
+      p_order_id: id,
+      p_restore_inventory: restoreInventory,
+      p_reason: reason,
+    }),
+    'No se pudo retirar el flujo del panel',
+  );
 }
 
 export async function respondSupport(id: string, body: string, isSensitive: boolean): Promise<void> {
