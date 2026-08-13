@@ -5,10 +5,9 @@
     <div data-support-public>
       <form class="panel form-grid support-public-form" data-support-form data-support-mode="public">
         <label class="wide">Asunto<input name="subject" required maxlength="160" /></label>
-        <label class="wide">¿En qué podemos ayudarte?<textarea name="purpose" required maxlength="500"></textarea></label>
         <label>Correo electrónico<input name="email" type="email" autocomplete="email" /></label>
         <label>Teléfono<input name="phone" type="tel" autocomplete="tel" /></label>
-        <label class="wide">Mensaje<textarea name="body" required maxlength="4000"></textarea></label>
+        <label class="wide">Mensaje<textarea name="body" required maxlength="4000" placeholder="Escribe tu mensaje para Mary..."></textarea></label>
         <label class="check-field wide"><input type="checkbox" name="sensitive" /> Contiene información sensible</label>
         <div class="form-actions wide"><button class="button primary" type="submit">Enviar a Mary</button></div>
         <div class="notice wide" data-support-message hidden role="status"></div>
@@ -51,8 +50,7 @@
     <form class="panel form-grid" data-support-form data-support-mode="account">
       <div class="wide support-dialog-heading"><div><span class="section-kicker">Nueva conversación</span><h2>Escríbele a Mary</h2></div><button class="icon-button" type="button" data-close-new-chat aria-label="Cerrar">×</button></div>
       <label class="wide">Asunto<input name="subject" required maxlength="160" /></label>
-      <label class="wide">¿En qué podemos ayudarte?<textarea name="purpose" required maxlength="500"></textarea></label>
-      <label class="wide">Mensaje<textarea name="body" required maxlength="4000"></textarea></label>
+      <label class="wide">Mensaje<textarea name="body" required maxlength="4000" placeholder="Escribe tu mensaje para Mary..."></textarea></label>
       <label class="check-field wide"><input type="checkbox" name="sensitive" /> Contiene información sensible</label>
       <div class="form-actions wide"><button class="button" type="button" data-close-new-chat>Cancelar</button><button class="button primary" type="submit">Iniciar conversación</button></div>
       <div class="notice wide" data-support-message hidden role="status"></div>

@@ -6,7 +6,8 @@ import {
   deleteCatalogResource,
   deleteClassificationAssignment,
   deletePackageComponent,
-  deleteUnusedProduct,
+  deletePresentation,
+  deleteProduct,
   getCatalogResourceUrl,
   getCurrentCapabilities,
   loadCatalogSnapshot,
@@ -344,6 +345,7 @@ class AdminWorkspace {
               <button class="button small" data-action="edit-presentation" data-id="${presentation.id}" ${this.canManageCatalog ? '' : 'disabled'}>Editar</button>
               <button class="button small" data-action="toggle-presentation" data-id="${presentation.id}" ${presentation.archived_at || !this.canManageCatalog ? 'disabled' : ''}>${presentation.is_active ? 'Desactivar' : 'Activar'}</button>
               <button class="button small" data-action="resources" data-owner-type="presentation" data-id="${presentation.id}">Imágenes</button>
+              <button class="button small danger" data-action="delete-presentation" data-id="${presentation.id}" ${this.canManageCatalog ? '' : 'disabled'}>Eliminar</button>
             </div></td></tr>`)
           .join('')}</tbody></table>`
       : emptyState('Sin presentaciones', 'Crea una Presentación asociada a un Producto.');
@@ -461,8 +463,14 @@ class AdminWorkspace {
     }
     if (action === 'delete-product') {
       const item = this.product(id);
-      if (item && window.confirm(`¿Eliminar definitivamente “${item.name}”?\n\nSolo será posible si no tiene existencias, movimientos, pedidos, carritos, paquetes o conversaciones vinculadas. Esta acción no se puede deshacer.`)) {
-        await this.runMutation(() => deleteUnusedProduct(id), 'Producto eliminado definitivamente.');
+      if (item && window.confirm(`¿Eliminar “${item.name}”?\n\nDejará de aparecer en el panel y en la tienda. El historial de pedidos o inventario se conservará cuando exista.`)) {
+        await this.runMutation(() => deleteProduct(id), 'Producto eliminado.');
+      }
+    }
+    if (action === 'delete-presentation') {
+      const item = this.presentation(id);
+      if (item && window.confirm(`¿Eliminar la Presentación “${item.sku}”?\n\nDejará de aparecer en Productos, Inventario y la tienda. Su historial se conservará cuando exista.`)) {
+        await this.runMutation(() => deletePresentation(id), 'Presentación eliminada.');
       }
     }
     if (action === 'toggle-presentation') {

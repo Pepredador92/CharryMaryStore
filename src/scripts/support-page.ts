@@ -142,13 +142,14 @@ class SupportWorkspace {
     const data = new FormData(form);
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
     const message = form.querySelector<HTMLElement>('[data-support-message]')!;
+    const body = String(data.get('body') ?? '').trim();
     button.disabled = true;
     try {
       const params = new URLSearchParams(location.search);
       const result = await submitSupportRequest({
         subject: String(data.get('subject') ?? '').trim(),
-        purpose: String(data.get('purpose') ?? '').trim(),
-        body: String(data.get('body') ?? '').trim(),
+        purpose: body.slice(0, 500),
+        body,
         contactEmail: String(data.get('email') ?? '').trim(),
         contactPhone: String(data.get('phone') ?? '').trim(),
         isSensitive: data.get('sensitive') === 'on',

@@ -28,6 +28,8 @@ export type Product = {
   warnings: string | null;
   is_active: boolean;
   archived_at: string | null;
+  deleted_at: string | null;
+  deletion_reason: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -42,6 +44,8 @@ export type Presentation = {
   currency_code: string;
   is_active: boolean;
   archived_at: string | null;
+  deleted_at: string | null;
+  deletion_reason: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -234,8 +238,8 @@ export async function getCurrentCapabilities(): Promise<Set<string>> {
 export async function loadCatalogSnapshot(): Promise<CatalogSnapshot> {
   const [products, presentations, inventory, movements, packages, components, classifications, assignments, resources] =
     await Promise.all([
-      supabase.from('products').select('*').order('name'),
-      supabase.from('sellable_presentations').select('*').order('sku'),
+      supabase.from('products').select('*').is('deleted_at', null).order('name'),
+      supabase.from('sellable_presentations').select('*').is('deleted_at', null).order('sku'),
       supabase.from('presentation_inventory').select('*').order('updated_at', { ascending: false }),
       supabase.from('inventory_movements').select('*').order('occurred_at', { ascending: false }).limit(250),
       supabase.from('packages').select('*').order('name'),
@@ -292,16 +296,24 @@ export async function archiveProduct(id: string): Promise<void> {
   requireData(result, 'No se pudo archivar el producto');
 }
 
-export async function deleteUnusedProduct(id: string): Promise<void> {
-  const result = await supabase.rpc('delete_unused_product', { p_product_id: id });
+async function removeDeletedCatalogFiles(paths: string[], label: string): Promise<void> {
+  if (!paths.length) return;
+  const removal = await supabase.storage.from(CATALOG_BUCKET).remove(paths);
+  if (removal.error) throw new Error(`${label}, pero sus archivos no pudieron eliminarse: ${removal.error.message}`);
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const result = await supabase.rpc('delete_catalog_product', { p_product_id: id });
   const deleted = requireData<{ resource_paths?: string[] }>(result, 'No se pudo eliminar el producto');
   const paths = deleted.resource_paths ?? [];
-  if (!paths.length) return;
+  await removeDeletedCatalogFiles(paths, 'El producto fue eliminado');
+}
 
-  const removal = await supabase.storage.from(CATALOG_BUCKET).remove(paths);
-  if (removal.error) {
-    throw new Error(`El producto fue eliminado, pero sus archivos no pudieron eliminarse: ${removal.error.message}`);
-  }
+export async function deletePresentation(id: string): Promise<void> {
+  const result = await supabase.rpc('delete_catalog_presentation', { p_presentation_id: id });
+  const deleted = requireData<{ resource_paths?: string[] }>(result, 'No se pudo eliminar la presentación');
+  const paths = deleted.resource_paths ?? [];
+  await removeDeletedCatalogFiles(paths, 'La presentación fue eliminada');
 }
 
 export async function savePresentation(
