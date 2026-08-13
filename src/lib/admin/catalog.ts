@@ -292,6 +292,18 @@ export async function archiveProduct(id: string): Promise<void> {
   requireData(result, 'No se pudo archivar el producto');
 }
 
+export async function deleteUnusedProduct(id: string): Promise<void> {
+  const result = await supabase.rpc('delete_unused_product', { p_product_id: id });
+  const deleted = requireData<{ resource_paths?: string[] }>(result, 'No se pudo eliminar el producto');
+  const paths = deleted.resource_paths ?? [];
+  if (!paths.length) return;
+
+  const removal = await supabase.storage.from(CATALOG_BUCKET).remove(paths);
+  if (removal.error) {
+    throw new Error(`El producto fue eliminado, pero sus archivos no pudieron eliminarse: ${removal.error.message}`);
+  }
+}
+
 export async function savePresentation(
   input: Partial<Presentation> & Pick<Presentation, 'product_id' | 'sku' | 'current_price_amount_minor' | 'currency_code'>,
 ): Promise<void> {

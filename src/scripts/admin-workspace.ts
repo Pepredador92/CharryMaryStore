@@ -6,6 +6,7 @@ import {
   deleteCatalogResource,
   deleteClassificationAssignment,
   deletePackageComponent,
+  deleteUnusedProduct,
   getCatalogResourceUrl,
   getCurrentCapabilities,
   loadCatalogSnapshot,
@@ -323,6 +324,7 @@ class AdminWorkspace {
                 <button class="button small" data-action="toggle-product" data-id="${product.id}" ${product.archived_at || !this.canManageCatalog ? 'disabled' : ''}>${product.is_active ? 'Desactivar' : 'Activar'}</button>
                 <button class="button small" data-action="resources" data-owner-type="product" data-id="${product.id}">Imágenes</button>
                 <button class="button small danger" data-action="archive-product" data-id="${product.id}" ${product.archived_at || !this.canManageCatalog ? 'disabled' : ''}>Archivar</button>
+                <button class="button small danger" data-action="delete-product" data-id="${product.id}" ${this.canManageCatalog ? '' : 'disabled'}>Eliminar</button>
               </div></td></tr>`;
           })
           .join('')}</tbody></table>`
@@ -456,6 +458,12 @@ class AdminWorkspace {
     if (action === 'archive-product') {
       if (window.confirm('¿Archivar este Producto? Permanecerá en el historial y dejará de estar disponible.')) {
         await this.runMutation(() => archiveProduct(id), 'Producto archivado.');
+      }
+    }
+    if (action === 'delete-product') {
+      const item = this.product(id);
+      if (item && window.confirm(`¿Eliminar definitivamente “${item.name}”?\n\nSolo será posible si no tiene existencias, movimientos, pedidos, carritos, paquetes o conversaciones vinculadas. Esta acción no se puede deshacer.`)) {
+        await this.runMutation(() => deleteUnusedProduct(id), 'Producto eliminado definitivamente.');
       }
     }
     if (action === 'toggle-presentation') {
