@@ -244,17 +244,31 @@ const createLabels = {
   </dialog>
 
   <dialog data-inventory-dialog>
-    <div class="dialog-head"><h2>Registrar movimiento</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
+    <div class="dialog-head"><h2>Cambiar existencias</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
     <div class="dialog-body">
       <form data-inventory-form>
         <input name="presentation_id" type="hidden" />
         <div class="notice" data-inventory-presentation></div>
         <div class="form-grid">
-          <label>Tipo<select name="movement_kind"><option value="stock_entry">Entrada de stock</option><option value="manual_adjustment">Ajuste manual</option></select></label>
-          <label>Cantidad<input name="quantity_delta" type="number" step="1" required /></label>
+          <label class="wide">Cantidad final<input name="target_quantity" type="number" min="0" step="1" required /></label>
           <label class="wide">Causa<textarea name="cause" required></textarea></label>
         </div>
-        <div class="form-actions"><button class="button" type="button" data-close-dialog>Cancelar</button><button class="button primary" type="submit">Registrar movimiento</button></div>
+        <div class="form-actions"><button class="button" type="button" data-close-dialog>Cancelar</button><button class="button primary" type="submit">Guardar cantidad</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog data-inventory-retire-dialog>
+    <div class="dialog-head"><h2>Eliminar del inventario</h2><button class="icon-button" type="button" data-close-dialog aria-label="Cerrar">×</button></div>
+    <div class="dialog-body">
+      <form data-inventory-retire-form>
+        <input name="presentation_id" type="hidden" />
+        <div class="notice" data-inventory-retire-presentation></div>
+        <p>Las existencias quedarán en cero y se conservará el movimiento en el historial. La presentación dejará de mostrarse en Inventario y en la tienda.</p>
+        <div class="form-grid">
+          <label class="wide">Motivo<textarea name="cause" required maxlength="1000"></textarea></label>
+        </div>
+        <div class="form-actions"><button class="button" type="button" data-close-dialog>Cancelar</button><button class="button danger" type="submit">Eliminar del inventario</button></div>
       </form>
     </div>
   </dialog>

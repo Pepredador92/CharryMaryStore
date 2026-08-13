@@ -429,6 +429,14 @@ export async function adjustInventory(input: {
   requireData(result, 'No se pudo registrar el movimiento de inventario');
 }
 
+export async function retireInventoryPresentation(presentationId: string, cause: string): Promise<void> {
+  const result = await supabase.rpc('retire_inventory_presentation', {
+    p_presentation_id: presentationId,
+    p_cause: cause.trim(),
+  });
+  requireData(result, 'No se pudo eliminar la presentación del inventario');
+}
+
 export async function uploadCatalogResource(input: {
   ownerType: 'product' | 'presentation' | 'package';
   ownerId: string;

@@ -11,6 +11,7 @@ import {
   getCurrentCapabilities,
   loadCatalogSnapshot,
   replaceCatalogResource,
+  retireInventoryPresentation,
   saveClassification,
   savePackage,
   savePackageComponent,
@@ -140,11 +141,7 @@ class AdminWorkspace {
     this.optional<HTMLFormElement>('[data-assignment-form]')?.addEventListener('submit', (event) => void this.submitAssignment(event));
     this.optional<HTMLSelectElement>('[data-assignment-form] [name="target_type"]')?.addEventListener('change', () => this.populateAssignmentTargets());
     this.optional<HTMLFormElement>('[data-inventory-form]')?.addEventListener('submit', (event) => void this.submitInventory(event));
-    this.optional<HTMLSelectElement>('[data-inventory-form] [name="movement_kind"]')?.addEventListener('change', (event) => {
-      const quantity = this.element<HTMLInputElement>('[data-inventory-form] [name="quantity_delta"]');
-      if ((event.target as HTMLSelectElement).value === 'stock_entry') quantity.min = '1';
-      else quantity.removeAttribute('min');
-    });
+    this.optional<HTMLFormElement>('[data-inventory-retire-form]')?.addEventListener('submit', (event) => void this.submitInventoryRetirement(event));
     this.optional<HTMLFormElement>('[data-resource-form]')?.addEventListener('submit', (event) => void this.submitResource(event));
     this.optional<HTMLInputElement>('[data-resource-replacement]')?.addEventListener('change', (event) => void this.replaceResource(event));
   }
@@ -375,13 +372,14 @@ class AdminWorkspace {
     const term = this.optional<HTMLInputElement>('[data-inventory-search]')?.value.trim().toLowerCase() ?? '';
     const presentations = this.snapshot.presentations.filter((presentation) => {
       const product = this.product(presentation.product_id);
-      return !term || [presentation.sku, presentation.variant_label ?? '', product?.name ?? ''].some((value) => value.toLowerCase().includes(term));
+      return !presentation.archived_at
+        && (!term || [presentation.sku, presentation.variant_label ?? '', product?.name ?? ''].some((value) => value.toLowerCase().includes(term)));
     });
     this.element<HTMLElement>('[data-inventory-table]').innerHTML = presentations.length
       ? `<table class="data-table"><thead><tr><th>Presentación</th><th>Producto</th><th>Existencias</th><th>Actualizado</th><th>Acción</th></tr></thead><tbody>${presentations
           .map((presentation) => {
             const inventory = this.snapshot?.inventory.find((item) => item.presentation_id === presentation.id);
-            return `<tr><td><span class="cell-title mono">${escapeHtml(presentation.sku)}</span><span class="cell-subtitle">${escapeHtml(presentation.variant_label || 'Sin variante')}</span></td><td>${escapeHtml(this.product(presentation.product_id)?.name || '')}</td><td><strong>${inventory?.on_hand_quantity ?? 0}</strong></td><td>${inventory ? formatDate(inventory.updated_at) : 'Sin movimientos'}</td><td><button class="button small primary" data-action="adjust-inventory" data-id="${presentation.id}" ${this.canAdjustInventory ? '' : 'disabled'}>Registrar movimiento</button></td></tr>`;
+            return `<tr><td><span class="cell-title mono">${escapeHtml(presentation.sku)}</span><span class="cell-subtitle">${escapeHtml(presentation.variant_label || 'Sin variante')}</span></td><td>${escapeHtml(this.product(presentation.product_id)?.name || '')}</td><td><strong>${inventory?.on_hand_quantity ?? 0}</strong></td><td>${inventory ? formatDate(inventory.updated_at) : 'Sin movimientos'}</td><td><div class="inline-actions"><button class="button small primary" data-action="adjust-inventory" data-id="${presentation.id}" ${this.canAdjustInventory ? '' : 'disabled'}>Cambiar cantidad</button><button class="button small danger" data-action="retire-inventory" data-id="${presentation.id}" ${this.canAdjustInventory && this.canManageCatalog ? '' : 'disabled'}>Eliminar del inventario</button></div></td></tr>`;
           })
           .join('')}</tbody></table>`
       : emptyState('Sin presentaciones', 'Crea Presentaciones antes de registrar inventario.');
@@ -447,6 +445,7 @@ class AdminWorkspace {
     if (action === 'edit-package') this.openPackage(this.package(id));
     if (action === 'edit-classification') this.openClassification(this.classification(id));
     if (action === 'adjust-inventory') this.openInventory(id);
+    if (action === 'retire-inventory') this.openInventoryRetirement(id);
     if (action === 'resources') {
       const ownerType = button.dataset.ownerType as OwnerType;
       this.openResources(ownerType, id);
@@ -605,11 +604,19 @@ class AdminWorkspace {
     const form = this.element<HTMLFormElement>('[data-inventory-form]');
     form.reset();
     this.setValue(form, 'presentation_id', presentation.id);
-    this.setValue(form, 'movement_kind', 'stock_entry');
-    const quantity = form.elements.namedItem('quantity_delta') as HTMLInputElement;
-    quantity.min = '1';
+    this.setValue(form, 'target_quantity', String(this.inventoryQuantity(presentation.id)));
     this.element<HTMLElement>('[data-inventory-presentation]').textContent = `${presentation.sku} · ${this.product(presentation.product_id)?.name ?? ''} · Existencias actuales: ${this.inventoryQuantity(presentation.id)}`;
     this.element<HTMLDialogElement>('[data-inventory-dialog]').showModal();
+  }
+
+  private openInventoryRetirement(presentationId: string): void {
+    const presentation = this.presentation(presentationId);
+    if (!presentation) return;
+    const form = this.element<HTMLFormElement>('[data-inventory-retire-form]');
+    form.reset();
+    this.setValue(form, 'presentation_id', presentation.id);
+    this.element<HTMLElement>('[data-inventory-retire-presentation]').textContent = `${presentation.sku} · ${this.product(presentation.product_id)?.name ?? ''} · Se retirarán ${this.inventoryQuantity(presentation.id)} unidad(es).`;
+    this.element<HTMLDialogElement>('[data-inventory-retire-dialog]').showModal();
   }
 
   private openResources(type: OwnerType, id: string): void {
@@ -764,12 +771,33 @@ class AdminWorkspace {
     event.preventDefault();
     const form = event.currentTarget as HTMLFormElement;
     const data = new FormData(form);
+    const presentationId = String(data.get('presentation_id'));
+    const currentQuantity = this.inventoryQuantity(presentationId);
+    const targetQuantity = Number(data.get('target_quantity'));
+    if (!Number.isSafeInteger(targetQuantity) || targetQuantity < 0) {
+      this.showToast('La cantidad final debe ser un número entero igual o mayor que cero.', 'error');
+      return;
+    }
+    if (targetQuantity === currentQuantity) {
+      this.showToast('La cantidad final es igual a la existencia actual.', 'error');
+      return;
+    }
     await this.runFormMutation(form, () => adjustInventory({
-      presentationId: String(data.get('presentation_id')),
-      quantityDelta: Number(data.get('quantity_delta')),
-      movementKind: String(data.get('movement_kind')) as 'stock_entry' | 'manual_adjustment',
+      presentationId,
+      quantityDelta: targetQuantity - currentQuantity,
+      movementKind: 'manual_adjustment',
       cause: String(data.get('cause') || ''),
-    }), 'Movimiento registrado.', () => this.element<HTMLDialogElement>('[data-inventory-dialog]').close());
+    }), 'Existencias actualizadas.', () => this.element<HTMLDialogElement>('[data-inventory-dialog]').close());
+  }
+
+  private async submitInventoryRetirement(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
+    const data = new FormData(form);
+    await this.runFormMutation(form, () => retireInventoryPresentation(
+      String(data.get('presentation_id')),
+      String(data.get('cause') || ''),
+    ), 'Producto eliminado del inventario.', () => this.element<HTMLDialogElement>('[data-inventory-retire-dialog]').close());
   }
 
   private async submitResource(event: SubmitEvent): Promise<void> {
