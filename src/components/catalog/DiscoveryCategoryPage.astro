@@ -1,0 +1,48 @@
+---
+interface Props {
+  categoryName: string;
+  theme: 'first' | 'self' | 'together' | 'new';
+  kicker: string;
+  title: string;
+  description: string;
+  introduction: string;
+  detail: string;
+}
+
+const { categoryName, theme, kicker, title, description, introduction, detail } = Astro.props;
+---
+
+<div data-storefront-app data-mode="category" data-category-name={categoryName}>
+  <section class:list={['category-hero', `category-hero--${theme}`]}>
+    <div class="category-hero-copy">
+      <span>{kicker}</span>
+      <h1>{title}</h1>
+      <p>{description}</p>
+      <a class="button category-hero-button" href="#seleccion">Ver selección</a>
+    </div>
+  </section>
+
+  <section class:list={['category-intro', `category-intro--${theme}`]}>
+    <div class="category-intro-inner">
+      <span class="section-kicker">Una colección para ti</span>
+      <h2>{introduction}</h2>
+      <p>{detail}</p>
+    </div>
+  </section>
+
+  <section class:list={['category-selection', `category-selection--${theme}`]} id="seleccion">
+    <div class="page-inner">
+      <div class="page-heading category-selection-heading">
+        <div><span class="section-kicker">Cherry Mary</span><h2>Explora la selección</h2></div>
+        <a class="section-link" href="/productos">Ver todo el catálogo <span aria-hidden="true">&rarr;</span></a>
+      </div>
+      <div class="catalog-grid" data-category-list>
+        <div class="state-box"><div><strong>Cargando selección</strong>Consultando el catálogo vigente.</div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import '../../scripts/storefront';
+</script>

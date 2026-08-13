@@ -5,6 +5,7 @@ import {
   loadPublicCatalog,
   packageAvailability,
   presentationAvailability,
+  catalogResources,
   primaryResource,
   catalogResourceUrl,
   resolveCartTarget,
@@ -14,7 +15,7 @@ import {
 } from '../services/catalog';
 import { addGuestCartItem, readGuestCart, setGuestCartItem, type GuestCartItem } from '../stores/guest-cart';
 
-type Mode = 'home' | 'products' | 'product-detail' | 'packages' | 'package-detail' | 'cart';
+type Mode = 'home' | 'products' | 'product-detail' | 'packages' | 'package-detail' | 'category' | 'cart';
 
 function escapeHtml(value: unknown): string {
   return String(value ?? '')
@@ -37,6 +38,7 @@ class Storefront {
     this.root.addEventListener('click', (event) => void this.handleClick(event));
     this.root.addEventListener('change', (event) => void this.handleChange(event));
     this.root.addEventListener('input', (event) => void this.handleCartQuantityInput(event));
+    this.root.addEventListener('keydown', (event) => this.handleGalleryKeydown(event));
     this.root.querySelector<HTMLInputElement>('[data-catalog-search]')?.addEventListener('input', () => this.renderListing());
     this.root.querySelector<HTMLSelectElement>('[data-classification-filter]')?.addEventListener('change', () => this.renderListing());
     void this.initialize();
@@ -47,6 +49,7 @@ class Storefront {
       this.snapshot = await loadPublicCatalog();
       if (this.mode === 'home') this.renderHome();
       else if (this.mode === 'products' || this.mode === 'packages') this.renderListing();
+      else if (this.mode === 'category') this.renderCategory();
       else if (this.mode === 'product-detail') this.renderProductDetail();
       else if (this.mode === 'package-detail') this.renderPackageDetail();
       else await this.renderCart();
@@ -74,6 +77,29 @@ class Storefront {
     return url
       ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" />`
       : '<span class="catalog-placeholder"><strong>Cherry Mary</strong><span>Imagen proximamente</span></span>';
+  }
+
+  private productGallery(product: Product): string {
+    if (!this.snapshot) return '';
+    const images = catalogResources(this.snapshot, 'product', product.id)
+      .map((resource) => ({ resource, url: catalogResourceUrl(resource) }))
+      .filter((item): item is { resource: typeof item.resource; url: string } => Boolean(item.url));
+
+    if (!images.length) {
+      return `<div class="product-gallery"><div class="detail-media">${this.image(null, product.name)}</div></div>`;
+    }
+
+    const first = images[0];
+    const multiple = images.length > 1;
+    return `<div class="product-gallery" data-product-gallery data-gallery-index="0" tabindex="0" aria-label="Galeria de ${escapeHtml(product.name)}">
+      <div class="detail-media product-gallery-stage">
+        <img src="${escapeHtml(first.url)}" alt="${escapeHtml(first.resource.alt_text || product.name)}" loading="eager" decoding="async" data-gallery-image />
+        ${multiple ? `<button class="gallery-arrow previous" type="button" data-gallery-step="-1" aria-label="Imagen anterior" title="Imagen anterior"><span aria-hidden="true">&#8592;</span></button>
+        <button class="gallery-arrow next" type="button" data-gallery-step="1" aria-label="Imagen siguiente" title="Imagen siguiente"><span aria-hidden="true">&#8594;</span></button>
+        <span class="gallery-counter" data-gallery-counter>1 / ${images.length}</span>` : ''}
+      </div>
+      ${multiple ? `<div class="gallery-thumbnails" aria-label="Imagenes del producto">${images.map((item, index) => `<button class="gallery-thumbnail${index === 0 ? ' active' : ''}" type="button" data-gallery-thumb="${index}" data-gallery-src="${escapeHtml(item.url)}" data-gallery-alt="${escapeHtml(item.resource.alt_text || `${product.name}, imagen ${index + 1}`)}" aria-label="Ver imagen ${index + 1} de ${images.length}" aria-pressed="${index === 0}"><img src="${escapeHtml(item.url)}" alt="" loading="lazy" /></button>`).join('')}</div>` : ''}
+    </div>`;
   }
 
   private productCard(product: Product): string {
@@ -146,6 +172,35 @@ class Storefront {
     if (target) target.innerHTML = cards.length ? cards.join('') : '<div class="state-box"><div><strong>Sin resultados</strong>Prueba con otra busqueda o clasificacion.</div></div>';
   }
 
+  private renderCategory(): void {
+    if (!this.snapshot) return;
+    const target = this.root.querySelector<HTMLElement>('[data-category-list]');
+    if (!target) return;
+    const requestedName = this.root.dataset.categoryName ?? '';
+    const normalize = (value: string) => value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLocaleLowerCase('es');
+    const classification = this.snapshot.classifications.find((item) => normalize(item.name) === normalize(requestedName));
+
+    if (!classification) {
+      target.innerHTML = '<div class="state-box"><div><strong>Selección en preparación</strong>Muy pronto encontrarás aquí una colección elegida para este momento.</div></div>';
+      return;
+    }
+
+    const assignments = this.snapshot.assignments.filter((item) => item.classification_id === classification.id);
+    const productIds = new Set(assignments.map((item) => item.product_id).filter(Boolean));
+    const packageIds = new Set(assignments.map((item) => item.package_id).filter(Boolean));
+    const cards = [
+      ...this.snapshot.products.filter((item) => productIds.has(item.id)).map((item) => this.productCard(item)),
+      ...this.snapshot.packages.filter((item) => packageIds.has(item.id)).map((item) => this.packageCard(item)),
+    ];
+    target.innerHTML = cards.length
+      ? cards.join('')
+      : '<div class="state-box"><div><strong>Selección en preparación</strong>Estamos reuniendo las primeras opciones para esta colección.</div></div>';
+  }
+
   private queryId(): string | null {
     return new URLSearchParams(window.location.search).get('id');
   }
@@ -161,9 +216,8 @@ class Storefront {
     }
     const presentations = this.snapshot.presentations.filter((item) => item.product_id === product.id);
     const selected = presentations[0];
-    const resource = primaryResource(this.snapshot, 'product', product.id);
     target.innerHTML = `<div class="detail-layout">
-      <div class="detail-media">${this.image(catalogResourceUrl(resource), resource?.alt_text || product.name)}</div>
+      ${this.productGallery(product)}
       <div class="detail-copy">
         <div><span class="badge">Producto</span><h1>${escapeHtml(product.name)}</h1></div>
         <p>${escapeHtml(product.description || 'Informacion comercial pendiente.')}</p>
@@ -237,6 +291,16 @@ class Storefront {
   private async handleClick(event: Event): Promise<void> {
     const button = (event.target as Element).closest<HTMLButtonElement>('button');
     if (!button) return;
+    if (button.dataset.galleryThumb !== undefined) {
+      this.selectGalleryImage(Number(button.dataset.galleryThumb));
+      return;
+    }
+    if (button.dataset.galleryStep) {
+      const gallery = button.closest<HTMLElement>('[data-product-gallery]');
+      const current = Number(gallery?.dataset.galleryIndex ?? 0);
+      this.selectGalleryImage(current + Number(button.dataset.galleryStep));
+      return;
+    }
     const kind = button.dataset.addKind as 'presentation' | 'package' | undefined;
     const id = button.dataset.addId;
     if (kind && id) {
@@ -261,6 +325,41 @@ class Storefront {
   private async handleChange(event: Event): Promise<void> {
     const target = event.target as HTMLInputElement | HTMLSelectElement;
     if (target.matches('[data-detail-presentation]')) this.updatePresentationSelection();
+  }
+
+  private handleGalleryKeydown(event: KeyboardEvent): void {
+    if (!event.target || !(event.target as Element).closest('[data-product-gallery]')) return;
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const gallery = this.root.querySelector<HTMLElement>('[data-product-gallery]');
+    const current = Number(gallery?.dataset.galleryIndex ?? 0);
+    this.selectGalleryImage(current + (event.key === 'ArrowRight' ? 1 : -1));
+  }
+
+  private selectGalleryImage(requestedIndex: number): void {
+    const gallery = this.root.querySelector<HTMLElement>('[data-product-gallery]');
+    if (!gallery) return;
+    const thumbnails = [...gallery.querySelectorAll<HTMLButtonElement>('[data-gallery-thumb]')];
+    if (!thumbnails.length) return;
+    const index = (requestedIndex + thumbnails.length) % thumbnails.length;
+    const selected = thumbnails[index];
+    const image = gallery.querySelector<HTMLImageElement>('[data-gallery-image]');
+    if (!selected || !image) return;
+
+    image.src = selected.dataset.gallerySrc ?? image.src;
+    image.alt = selected.dataset.galleryAlt ?? '';
+    gallery.dataset.galleryIndex = String(index);
+    thumbnails.forEach((thumbnail, thumbnailIndex) => {
+      const active = thumbnailIndex === index;
+      thumbnail.classList.toggle('active', active);
+      thumbnail.setAttribute('aria-pressed', String(active));
+    });
+    const counter = gallery.querySelector<HTMLElement>('[data-gallery-counter]');
+    if (counter) counter.textContent = `${index + 1} / ${thumbnails.length}`;
+    const rail = selected.parentElement;
+    if (rail) {
+      rail.scrollLeft = selected.offsetLeft - (rail.clientWidth - selected.clientWidth) / 2;
+    }
   }
 
   private handleCartQuantityInput(event: Event): void {

@@ -136,10 +136,18 @@ export function primaryResource(
   kind: 'product' | 'presentation' | 'package',
   id: string,
 ): CatalogResource | undefined {
+  return catalogResources(snapshot, kind, id)[0];
+}
+
+export function catalogResources(
+  snapshot: CatalogSnapshot,
+  kind: 'product' | 'presentation' | 'package',
+  id: string,
+): CatalogResource[] {
   const column = `${kind}_id` as 'product_id' | 'presentation_id' | 'package_id';
   return snapshot.resources
     .filter((resource) => resource[column] === id)
-    .sort((left, right) => Number(right.is_primary) - Number(left.is_primary) || left.sort_order - right.sort_order)[0];
+    .sort((left, right) => Number(right.is_primary) - Number(left.is_primary) || left.sort_order - right.sort_order);
 }
 
 export function presentationAvailability(snapshot: CatalogSnapshot, presentationId: string): number {

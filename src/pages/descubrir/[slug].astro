@@ -1,0 +1,67 @@
+---
+import DiscoveryCategoryPage from '../../components/catalog/DiscoveryCategoryPage.astro';
+import StoreLayout from '../../layouts/StoreLayout.astro';
+
+type CategoryPage = {
+  slug: string;
+  categoryName: string;
+  theme: 'first' | 'self' | 'together' | 'new';
+  kicker: string;
+  title: string;
+  description: string;
+  introduction: string;
+  detail: string;
+};
+
+export function getStaticPaths() {
+  const categories: CategoryPage[] = [
+    {
+      slug: 'mi-primera-eleccion',
+      categoryName: 'Mi primera elección',
+      theme: 'first',
+      kicker: 'Empieza a tu manera',
+      title: 'Mi primera elección',
+      description: 'Opciones amables para descubrir qué te gusta con confianza y sin prisa.',
+      introduction: 'La curiosidad también puede sentirse sencilla.',
+      detail: 'Una selección para comenzar con productos fáciles de conocer, cómodos de explorar y pensados para disfrutar desde el primer momento.',
+    },
+    {
+      slug: 'de-mi-para-mi',
+      categoryName: 'De mí para mí',
+      theme: 'self',
+      kicker: 'Tu momento',
+      title: 'De mí, para mí',
+      description: 'Texturas, detalles y sensaciones elegidas para disfrutarte a tu propio ritmo.',
+      introduction: 'Tu placer no necesita una ocasión especial.',
+      detail: 'Encuentra piezas que acompañen tus rituales, tu estilo y esos momentos que eliges reservar solamente para ti.',
+    },
+    {
+      slug: 'explorando-juntos',
+      categoryName: 'Explorando juntos',
+      theme: 'together',
+      kicker: 'Placer compartido',
+      title: 'Explorando juntos',
+      description: 'Ideas para conversar, conectar y probar algo nuevo en compañía.',
+      introduction: 'Compartir la curiosidad abre otras formas de conectar.',
+      detail: 'Paquetes y productos elegidos para crear experiencias en pareja, descubrir preferencias y disfrutar el camino juntos.',
+    },
+    {
+      slug: 'nuevas-sensaciones',
+      categoryName: 'Nuevas sensaciones',
+      theme: 'new',
+      kicker: 'Atrévete a explorar',
+      title: 'Nuevas sensaciones',
+      description: 'Una selección más intensa para transformar la curiosidad en una experiencia distinta.',
+      introduction: 'Lo desconocido puede comenzar con una elección consciente.',
+      detail: 'Descubre accesorios y propuestas BDSM para explorar límites, contrastes y nuevas dinámicas siempre desde el cuidado y el acuerdo.',
+    },
+  ];
+  return categories.map((category) => ({ params: { slug: category.slug }, props: category }));
+}
+
+const category = Astro.props as CategoryPage;
+---
+
+<StoreLayout title={category.title}>
+  <DiscoveryCategoryPage {...category} />
+</StoreLayout>
