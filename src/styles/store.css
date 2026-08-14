@@ -285,6 +285,25 @@ input:focus, select:focus, textarea:focus { outline: 3px solid #f5c5d0; border-c
 .detail-note { border-left: 3px solid var(--accent); padding-left: 14px; }
 .component-list, .order-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .component-list li, .order-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.package-contents { display: grid; gap: 10px; }
+.package-component-list { border-top: 1px solid var(--line); }
+.package-component-item { min-width: 0; display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 13px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.package-component-thumb { width: 58px; aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 5px; background: var(--blush); object-fit: cover; }
+.package-component-placeholder { color: var(--accent-dark); font-size: 12px; font-weight: 600; }
+.package-component-copy { min-width: 0; }
+.package-component-copy h2 { margin: 0; overflow-wrap: anywhere; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.package-component-copy p { margin-top: 4px; font-size: 12px; line-height: 1.4; }
+.package-component-price { display: grid; justify-items: end; gap: 2px; text-align: right; }
+.package-component-price span, .package-component-price small { color: var(--muted); font-size: 10px; font-weight: 500; }
+.package-component-price strong { font-size: 14px; font-weight: 600; }
+.package-price-comparison { display: grid; gap: 10px; padding: 16px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.package-price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 13px; }
+.package-price-row s { font-size: 15px; }
+.package-price-total { color: var(--ink); }
+.package-price-total strong { font-size: 23px; font-weight: 600; }
+.package-savings { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 11px; border-radius: 4px; background: var(--mint); color: var(--mint-dark); font-size: 13px; }
+.package-savings strong { font-size: 16px; font-weight: 600; }
+.package-availability { min-height: 20px; }
 
 .state-box { min-height: 180px; display: grid; place-items: center; text-align: center; border: 1px dashed #aaa2a5; padding: 24px; color: var(--muted); background: rgba(255,255,255,.65); }
 .state-box strong { display: block; margin-bottom: 5px; color: var(--ink); }
@@ -444,6 +463,9 @@ input:focus, select:focus, textarea:focus { outline: 3px solid #f5c5d0; border-c
   .home-hero h1 { margin-bottom: 12px; font-size: 46px; }
   .home-hero p { margin-bottom: 18px; font-size: 15px; line-height: 1.45; }
   .home-hero .button { min-height: 40px; padding: 8px 12px; font-size: 12px; }
+  .package-component-item { grid-template-columns: 54px minmax(0, 1fr); }
+  .package-component-thumb { width: 54px; }
+  .package-component-price { grid-column: 2; justify-items: start; text-align: left; }
   .category-hero { min-height: 360px; height: min(54svh, 460px); padding: 34px 18px; }
   .category-hero-copy, .category-hero--self .category-hero-copy { width: 88%; }
   .category-hero h1 { font-size: 44px; }

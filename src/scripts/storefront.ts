@@ -79,27 +79,62 @@ class Storefront {
       : '<span class="catalog-placeholder"><strong>Cherry Mary</strong><span>Imagen proximamente</span></span>';
   }
 
-  private productGallery(product: Product): string {
-    if (!this.snapshot) return '';
-    const images = catalogResources(this.snapshot, 'product', product.id)
-      .map((resource) => ({ resource, url: catalogResourceUrl(resource) }))
-      .filter((item): item is { resource: typeof item.resource; url: string } => Boolean(item.url));
-
+  private imageGallery(images: Array<{ url: string; alt: string }>, fallbackName: string): string {
     if (!images.length) {
-      return `<div class="product-gallery"><div class="detail-media">${this.image(null, product.name)}</div></div>`;
+      return `<div class="product-gallery"><div class="detail-media">${this.image(null, fallbackName)}</div></div>`;
     }
 
     const first = images[0];
     const multiple = images.length > 1;
-    return `<div class="product-gallery" data-product-gallery data-gallery-index="0" tabindex="0" aria-label="Galeria de ${escapeHtml(product.name)}">
+    return `<div class="product-gallery" data-product-gallery data-gallery-index="0" tabindex="0" aria-label="Galeria de ${escapeHtml(fallbackName)}">
       <div class="detail-media product-gallery-stage">
-        <img src="${escapeHtml(first.url)}" alt="${escapeHtml(first.resource.alt_text || product.name)}" loading="eager" decoding="async" data-gallery-image />
+        <img src="${escapeHtml(first.url)}" alt="${escapeHtml(first.alt)}" loading="eager" decoding="async" data-gallery-image />
         ${multiple ? `<button class="gallery-arrow previous" type="button" data-gallery-step="-1" aria-label="Imagen anterior" title="Imagen anterior"><span aria-hidden="true">&#8592;</span></button>
         <button class="gallery-arrow next" type="button" data-gallery-step="1" aria-label="Imagen siguiente" title="Imagen siguiente"><span aria-hidden="true">&#8594;</span></button>
         <span class="gallery-counter" data-gallery-counter>1 / ${images.length}</span>` : ''}
       </div>
-      ${multiple ? `<div class="gallery-thumbnails" aria-label="Imagenes del producto">${images.map((item, index) => `<button class="gallery-thumbnail${index === 0 ? ' active' : ''}" type="button" data-gallery-thumb="${index}" data-gallery-src="${escapeHtml(item.url)}" data-gallery-alt="${escapeHtml(item.resource.alt_text || `${product.name}, imagen ${index + 1}`)}" aria-label="Ver imagen ${index + 1} de ${images.length}" aria-pressed="${index === 0}"><img src="${escapeHtml(item.url)}" alt="" loading="lazy" /></button>`).join('')}</div>` : ''}
+      ${multiple ? `<div class="gallery-thumbnails" aria-label="Imagenes de ${escapeHtml(fallbackName)}">${images.map((item, index) => `<button class="gallery-thumbnail${index === 0 ? ' active' : ''}" type="button" data-gallery-thumb="${index}" data-gallery-src="${escapeHtml(item.url)}" data-gallery-alt="${escapeHtml(item.alt)}" aria-label="Ver imagen ${index + 1} de ${images.length}" aria-pressed="${index === 0}"><img src="${escapeHtml(item.url)}" alt="" loading="lazy" /></button>`).join('')}</div>` : ''}
     </div>`;
+  }
+
+  private productGallery(product: Product): string {
+    if (!this.snapshot) return '';
+    const images = catalogResources(this.snapshot, 'product', product.id)
+      .map((resource, index) => ({
+        url: catalogResourceUrl(resource),
+        alt: resource.alt_text || `${product.name}, imagen ${index + 1}`,
+      }))
+      .filter((item): item is { url: string; alt: string } => Boolean(item.url));
+    return this.imageGallery(images, product.name);
+  }
+
+  private packageGallery(itemPackage: Package, components: CatalogSnapshot['components']): string {
+    if (!this.snapshot) return '';
+    const images: Array<{ url: string; alt: string }> = [];
+    const resourceIds = new Set<string>();
+    const appendResources = (resources: CatalogSnapshot['resources'], ownerName: string): void => {
+      resources.forEach((resource, index) => {
+        if (resourceIds.has(resource.id)) return;
+        const url = catalogResourceUrl(resource);
+        if (!url) return;
+        resourceIds.add(resource.id);
+        images.push({ url, alt: resource.alt_text || `${ownerName}, imagen ${index + 1}` });
+      });
+    };
+
+    appendResources(catalogResources(this.snapshot, 'package', itemPackage.id), itemPackage.name);
+    components.forEach((component) => {
+      const presentation = this.snapshot!.presentations.find((item) => item.id === component.presentation_id);
+      const product = this.snapshot!.products.find((item) => item.id === presentation?.product_id);
+      if (!presentation || !product) return;
+      const presentationImages = catalogResources(this.snapshot!, 'presentation', presentation.id);
+      appendResources(
+        presentationImages.length ? presentationImages : catalogResources(this.snapshot!, 'product', product.id),
+        product.name,
+      );
+    });
+
+    return this.imageGallery(images, itemPackage.name);
   }
 
   private productCard(product: Product): string {
@@ -259,18 +294,48 @@ class Storefront {
     }
     const components = this.snapshot.components.filter((item) => item.package_id === itemPackage.id && item.is_active);
     const availability = packageAvailability(this.snapshot, itemPackage.id);
-    const resource = primaryResource(this.snapshot, 'package', itemPackage.id);
+    const componentDetails = components.map((component) => {
+      const presentation = this.snapshot!.presentations.find((item) => item.id === component.presentation_id);
+      const product = this.snapshot!.products.find((item) => item.id === presentation?.product_id);
+      const resource = presentation
+        ? primaryResource(this.snapshot!, 'presentation', presentation.id)
+          ?? (product ? primaryResource(this.snapshot!, 'product', product.id) : undefined)
+        : undefined;
+      return { component, presentation, product, imageUrl: catalogResourceUrl(resource) };
+    });
+    const comparablePrices = componentDetails.length > 0 && componentDetails.every(({ presentation }) =>
+      presentation?.currency_code === itemPackage.currency_code,
+    );
+    const individualTotal = comparablePrices
+      ? componentDetails.reduce((total, { component, presentation }) =>
+          total + (presentation?.current_price_amount_minor ?? 0) * component.quantity, 0)
+      : 0;
+    const savings = Math.max(0, individualTotal - itemPackage.current_price_amount_minor);
     target.innerHTML = `<div class="detail-layout">
-      <div class="detail-media">${this.image(catalogResourceUrl(resource), resource?.alt_text || itemPackage.name)}</div>
+      ${this.packageGallery(itemPackage, components)}
       <div class="detail-copy">
         <div><span class="badge">Paquete</span><h1>${escapeHtml(itemPackage.name)}</h1></div>
         <p>${escapeHtml(itemPackage.description || 'Combinacion de Presentaciones vigentes.')}</p>
-        <div><strong>Incluye</strong><ul class="component-list">${components.map((component) => {
-          const presentation = this.snapshot!.presentations.find((item) => item.id === component.presentation_id);
-          const product = this.snapshot!.products.find((item) => item.id === presentation?.product_id);
-          return `<li>${component.quantity} x ${escapeHtml(product?.name || 'Producto')} ${presentation?.variant_label ? `- ${escapeHtml(presentation.variant_label)}` : ''}</li>`;
-        }).join('')}</ul></div>
-        <div class="catalog-meta"><span class="price">${formatMoney(itemPackage.current_price_amount_minor, itemPackage.currency_code)}</span><span class="availability ${availability ? '' : 'out'}">${availability ? `${availability} disponibles` : 'Sin disponibilidad'}</span></div>
+        <div class="package-contents"><strong>Este paquete incluye</strong><div class="package-component-list">${componentDetails.map(({ component, presentation, product, imageUrl }) => {
+          const productName = product?.name || 'Producto no disponible';
+          const unitPrice = presentation
+            ? formatMoney(presentation.current_price_amount_minor, presentation.currency_code)
+            : 'Precio no disponible';
+          const lineTotal = presentation
+            ? formatMoney(presentation.current_price_amount_minor * component.quantity, presentation.currency_code)
+            : '';
+          return `<article class="package-component-item">
+            ${imageUrl ? `<img class="package-component-thumb" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(productName)}" loading="lazy" />` : '<span class="package-component-thumb package-component-placeholder">CM</span>'}
+            <div class="package-component-copy"><h2>${escapeHtml(productName)}</h2><p>${escapeHtml(presentation?.variant_label || presentation?.sku || 'Presentacion no disponible')} · Cantidad: ${component.quantity}</p></div>
+            <div class="package-component-price"><span>Precio individual</span><strong>${unitPrice}</strong>${component.quantity > 1 && lineTotal ? `<small>${lineTotal} por ${component.quantity}</small>` : ''}</div>
+          </article>`;
+        }).join('')}</div></div>
+        ${comparablePrices ? `<div class="package-price-comparison">
+          <div class="package-price-row"><span>Comprados por separado</span><s>${formatMoney(individualTotal, itemPackage.currency_code)}</s></div>
+          <div class="package-price-row package-price-total"><span>Precio del paquete</span><strong>${formatMoney(itemPackage.current_price_amount_minor, itemPackage.currency_code)}</strong></div>
+          ${savings > 0 ? `<div class="package-savings"><span>Ahorras</span><strong>${formatMoney(savings, itemPackage.currency_code)}</strong></div>` : ''}
+        </div>` : `<div class="catalog-meta"><span class="price">${formatMoney(itemPackage.current_price_amount_minor, itemPackage.currency_code)}</span></div>`}
+        <div class="catalog-meta package-availability"><span></span><span class="availability ${availability ? '' : 'out'}">${availability ? 'Disponible' : 'Sin disponibilidad'}</span></div>
         <button class="button primary" data-add-kind="package" data-add-id="${itemPackage.id}" ${availability ? '' : 'disabled'}>Agregar al carrito</button>
       </div>
     </div>`;
