@@ -1,9 +1,7 @@
-import { supabase, supabaseKey, supabaseUrl } from '../supabase/client';
+import { supabase } from '../supabase/client';
 
 export const CATALOG_BUCKET = 'catalog-resources';
 export const CATALOG_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
-const CATALOG_UPLOAD_TIMEOUT_MS = 30_000;
-const CATALOG_FILE_READ_TIMEOUT_MS = 15_000;
 
 const CATALOG_IMAGE_EXTENSIONS: Record<string, string> = {
   'image/avif': 'avif',
@@ -160,66 +158,15 @@ function catalogImageMetadata(file: File): { contentType: string; extension: str
   return { contentType, extension: CATALOG_IMAGE_EXTENSIONS[contentType] };
 }
 
-async function readCatalogFile(file: File): Promise<ArrayBuffer> {
-  return new Promise<ArrayBuffer>((resolve, reject) => {
-    const reader = new FileReader();
-    const timeout = window.setTimeout(() => {
-      reader.abort();
-      reject(new Error('El navegador no pudo leer la imagen. Intenta cargarla desde Chrome o Safari.'));
-    }, CATALOG_FILE_READ_TIMEOUT_MS);
-
-    reader.addEventListener('load', () => {
-      window.clearTimeout(timeout);
-      if (reader.result instanceof ArrayBuffer) resolve(reader.result);
-      else reject(new Error('No se pudo leer la imagen seleccionada.'));
-    });
-    reader.addEventListener('error', () => {
-      window.clearTimeout(timeout);
-      reject(new Error('No se pudo leer la imagen seleccionada.'));
-    });
-    reader.addEventListener('abort', () => window.clearTimeout(timeout));
-    reader.readAsArrayBuffer(file);
-  });
-}
-
 async function uploadCatalogFile(path: string, file: File, contentType: string): Promise<void> {
-  const fileBody = await readCatalogFile(file);
-  const { data, error } = await supabase.auth.getSession();
-  if (error || !data.session) {
-    throw new Error(error?.message ?? 'La sesión expiró. Inicia sesión nuevamente.');
-  }
-
-  const encodedPath = [CATALOG_BUCKET, ...path.split('/')].map(encodeURIComponent).join('/');
-
-  await new Promise<void>((resolve, reject) => {
-    const request = new XMLHttpRequest();
-    request.open('POST', `${supabaseUrl}/storage/v1/object/${encodedPath}`);
-    request.timeout = CATALOG_UPLOAD_TIMEOUT_MS;
-    request.setRequestHeader('apikey', supabaseKey);
-    request.setRequestHeader('authorization', `Bearer ${data.session.access_token}`);
-    request.setRequestHeader('cache-control', 'max-age=3600');
-    request.setRequestHeader('content-type', contentType);
-    request.setRequestHeader('x-upsert', 'false');
-
-    request.addEventListener('load', () => {
-      if (request.status >= 200 && request.status < 300) {
-        resolve();
-        return;
-      }
-
-      let message = request.statusText || `Error ${request.status}`;
-      try {
-        const response = JSON.parse(request.responseText) as { message?: string; error?: string };
-        message = response.message || response.error || message;
-      } catch {
-        // Keep the HTTP status when Storage does not return JSON.
-      }
-      reject(new Error(`No se pudo subir la imagen: ${message}`));
-    });
-    request.addEventListener('error', () => reject(new Error('No se pudo conectar con el almacenamiento de imágenes.')));
-    request.addEventListener('timeout', () => reject(new Error('La carga tardó demasiado. Inténtala nuevamente.')));
-    request.send(fileBody);
+  const upload = await supabase.storage.from(CATALOG_BUCKET).upload(path, file, {
+    cacheControl: '3600',
+    contentType,
+    upsert: false,
   });
+  if (upload.error) {
+    throw new Error(`No se pudo subir la imagen: ${upload.error.message}`);
+  }
 }
 
 function requireData<T>(result: QueryResult<T>, context: string): T {
